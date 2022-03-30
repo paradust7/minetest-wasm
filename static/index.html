@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Minetest 5.6.0</title>
+    <style>
+      body {
+        font-family: arial;
+        margin: 0;
+        padding: none;
+        background-color: black;
+      }
+
+      .emscripten {
+        padding-right: 0;
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+      }
+
+      div.emscripten {
+        text-align: center;
+        width: 100%;
+      }
+
+      /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
+      canvas.emscripten {
+        border: 0px none;
+        background-color: black;
+      }
+
+      #progress {
+        height: 20px;
+        width: 300px;
+      }
+
+      #controls {
+        display: inline-block;
+        vertical-align: top;
+	height: 25px;
+      }
+
+      #output {
+        width: 100%;
+        height: 200px;
+        margin: 0 auto;
+        margin-top: 0px;
+        border-left: 0px;
+        border-right: 0px;
+        padding-left: 0px;
+        padding-right: 0px;
+        display: block;
+        background-color: black;
+        color: white;
+        font-family: 'Lucida Console', Monaco, monospace;
+        outline: none;
+      }
+
+      .playbutton {
+          position: absolute;
+          width: 300px;
+          height: 120px;
+          z-index: 10;
+          font-size: 20pt;
+      }
+    </style>
+  </head>
+  <body>
+
+  <div id="header">
+
+  <div class="emscripten">
+    <span id='controls'>
+      <span>
+        <select id="resolution" onchange="fixGeometry()">
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </span>
+      <span>
+        <select id="aspectRatio" onchange="fixGeometry()">
+          <option value="any">Fit Screen</option>
+          <option value="4:3">4:3</option>
+          <option value="16:9">16:9</option>
+          <option value="5:4">5:4</option>
+          <option value="21:9">21:9</option>
+          <option value="32:9">32:9</option>
+          <option value="1:1">1:1</option>
+        </select>
+      </span>
+      <span><input type="button" value="Toggle Fullscreen" onclick="fullscreen_button()"></span>
+      <span><input type="button" value="Toggle Console" onclick="toggle_console()"></span>
+    </span>
+  </div>
+
+  <div class="emscripten">
+    <progress value="0" max="100" id="progress" hidden=1></progress>
+  </div>
+
+  </div>
+
+  <div class="emscripten">
+    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" onclick="doPlay()" tabindex=-1 width="1024" height="600">
+    </canvas>
+  </div>
+
+  <div id="footer">
+    <textarea id="output" rows="8" style="display: none;"></textarea>
+  </div>
+
+
+
+
+
+    <script type='text/javascript'>
+      var progressElement = document.getElementById('progress');
+
+      function toggle_console() {
+        var element = document.getElementById('output');
+        element.style.display = (element.style.display == 'block') ? 'none' : 'block';
+        fixGeometry();
+      }
+
+      var consoleElement = document.getElementById('output');
+      var enableTracing = false;
+      var consoleText = [];
+      var consoleLengthMax = 1000;
+      var consoleTextLast = 0;
+      var consoleDirty = false;
+      var playOK = false;
+      var didPlay = false;
+
+      // Called by the MainLoop when it is ready
+      function mainloop_ready_to_play() {
+          drawPlayButton();
+          playOK = true;
+      }
+
+      var thePlayButton;
+      function drawPlayButton() {
+          if (thePlayButton) return;
+
+          var canvas = document.getElementById('canvas');
+          var canvasRect = canvas.getBoundingClientRect();
+          var midX = Math.floor((canvasRect.top + canvasRect.bottom) / 2);
+          var midY = Math.floor((canvasRect.left + canvasRect.right) / 2);
+          thePlayButton = document.createElement('button');
+          thePlayButton.className = 'playbutton';
+          thePlayButton.innerText = 'Click to Launch';
+          thePlayButton.style.left = (midY - 300/2) + 'px';
+          thePlayButton.style.top = (midX - 120/2) + 'px';
+          thePlayButton.addEventListener('click', doPlay);
+          document.body.appendChild(thePlayButton);
+      }
+
+      function doPlay() {
+        if (thePlayButton) {
+            thePlayButton.remove();
+            thePlayButton = null;
+        }
+
+        if (playOK && !didPlay) {
+            setupWrappers();
+            didPlay = true;
+            mainloop_play_wrapped();
+            // irrlicht initialization resets the width/height
+            fixGeometry();
+        }
+      }
+
+      function consoleUpdate() {
+          if (consoleDirty) {
+            if (consoleText.length > consoleLengthMax) {
+                consoleText = consoleText.slice(-consoleLengthMax);
+            }
+            consoleElement.value = consoleText.join('');
+            consoleElement.scrollTop = consoleElement.scrollHeight; // focus on bottom
+            consoleDirty = false;
+          }
+          window.requestAnimationFrame(consoleUpdate);
+      }
+      consoleUpdate();
+
+      var Module = {
+        preRun: [],
+        postRun: [],
+        print: (function() {
+          return function(text) {
+            if (enableTracing) {
+              console.trace(text);
+            }
+            consoleText.push(text + "\n");
+            consoleDirty = true;
+          };
+        })(),
+        canvas: (function() {
+          var canvas = document.getElementById('canvas');
+
+          // As a default initial behavior, pop up an alert when webgl context is lost. To make your
+          // application robust, you may want to override this behavior before shipping!
+          // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+          canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+
+          return canvas;
+        })(),
+        setStatus: function(text) {
+          if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
+          if (text === Module.setStatus.last.text) return;
+          if (text) Module.print('[status] ' + text);
+
+          var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+          var now = Date.now();
+          if (m && now - Module.setStatus.last.time < 30) return; // if this is a progress update, skip it if too soon
+          Module.setStatus.last.time = now;
+          Module.setStatus.last.text = text;
+          if (m) {
+            text = m[1];
+            progressElement.value = parseInt(m[2])*100;
+            progressElement.max = parseInt(m[4])*100;
+            progressElement.hidden = false;
+          } else {
+            progressElement.value = null;
+            progressElement.max = null;
+            progressElement.hidden = true;
+          }
+        },
+        totalDependencies: 0,
+        monitorRunDependencies: function(left) {
+          this.totalDependencies = Math.max(this.totalDependencies, left);
+          Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+        }
+      };
+      Module['printErr'] = Module['print'];
+      Module['onFullScreen'] = () => { fixGeometry(); };
+      Module.setStatus('Downloading...');
+      window.onerror = function(event) {
+        // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
+        Module.print('Exception thrown, see JavaScript console');
+        Module.setStatus = function(text) {
+          if (text) Module.print('[status] ' + text);
+        };
+      };
+      var pointerlock_pending = false;
+      var mainloop_play_wrapped;
+      var irrlicht_want_pointerlock;
+      var irrlicht_resize;
+
+      function setupWrappers() {
+        if (!mainloop_play_wrapped || !irrlicht_want_pointerlock || !irrlicht_resize) {
+          mainloop_play_wrapped = cwrap("mainloop_play");
+	  irrlicht_want_pointerlock = cwrap("irrlicht_want_pointerlock", "number");
+          irrlicht_resize = cwrap("irrlicht_resize", null, ['number', 'number']);
+        }
+      }
+
+      function fullscreen_button() {
+        var canvas = document.getElementById('canvas');
+        if (playOK) {
+          setupWrappers();
+          var alsoLockPointer = irrlicht_want_pointerlock();
+          // This calls Module['onFullScreen'] when finished, which calls fixGeometry.
+          Module.requestFullscreen(alsoLockPointer, false);
+        }
+      }
+
+      function resizeCanvas(width, height) {
+          var canvas = document.getElementById('canvas');
+          if (canvas.width != width || canvas.height != height) {
+            canvas.width = width;
+            canvas.height = height;
+            canvas.widthNative = width;
+            canvas.heightNative = height;
+          }
+          // Trigger SDL window resize.
+          // This should happen automatically, it's disappointing that it doesn't.
+          if (playOK) {
+              setupWrappers();
+              irrlicht_resize(width, height);
+          }
+      }
+
+      var resolutionSelect = document.getElementById('resolution');
+      var aspectRatioSelect = document.getElementById('aspectRatio');
+
+      function fixGeometry() {
+        var canvas = document.getElementById('canvas');
+        var resolution = resolutionSelect.value;
+        var aspectRatio = aspectRatioSelect.value;
+        var screenX;
+        var screenY;
+
+        var isFullScreen = document.fullscreenElement ? true : false;
+        if (isFullScreen) {
+            screenX = screen.width;
+            screenY = screen.height;
+        } else {
+            var headerHeight = document.getElementById('header').offsetHeight;
+            var footerHeight = document.getElementById('footer').offsetHeight;
+            screenX = document.documentElement.clientWidth;
+            screenY = document.documentElement.clientHeight - headerHeight - footerHeight;
+        }
+
+        // Size of the viewport (after scaling)
+        var realX;
+        var realY;
+        if (aspectRatio == 'any') {
+            realX = screenX;
+            realY = screenY;
+        } else {
+            var ar = aspectRatio.split(':');
+            var innerRatio = parseInt(ar[0]) / parseInt(ar[1]);
+            var outerRatio = screenX / screenY;
+            if (innerRatio <= outerRatio) {
+                realX = Math.floor(innerRatio * screenY);
+                realY = screenY;
+            } else {
+                realX = screenX;
+                realY = Math.floor(screenX / innerRatio);
+            }
+        }
+
+        // Native canvas resolution
+        var resX;
+        var resY;
+        var scale = false;
+        if (resolution == 'high') {
+            resX = realX;
+            resY = realY;
+        } else if (resolution == 'medium') {
+            resX = Math.floor(realX / 1.5);
+            resY = Math.floor(realY / 1.5);
+            scale = true;
+        } else {
+            resX = Math.floor(realX / 2.0);
+            resY = Math.floor(realY / 2.0);
+            scale = true;
+        }
+        resizeCanvas(resX, resY);
+
+        if (scale) {
+            var styleWidth = realX + "px";
+            var styleHeight = realY + "px";
+            canvas.style.setProperty("width", styleWidth, "important");
+            canvas.style.setProperty("height", styleHeight, "important");
+        } else {
+            canvas.style.removeProperty("width");
+            canvas.style.removeProperty("height");
+        }
+      }
+      window.addEventListener('resize', fixGeometry);
+      fixGeometry();
+    </script>
+    <script async type="text/javascript" src="minetest.js"></script>
+  </body>
+</html>
