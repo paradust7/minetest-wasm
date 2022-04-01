@@ -26,6 +26,9 @@ echo > dummy.c
 emcc -c dummy.c -o dummy.o
 DUMMY_OBJECT="$(pwd)/dummy.o"
 
+#      -DCURL_LIBRARY="$INSTALL_DIR/lib/libcurl.a" \
+#      -DCURL_INCLUDE_DIR="$INSTALL_DIR/include" \
+
 if ! $INCREMENTAL; then
     emcmake cmake \
       -DENABLE_SYSTEM_GMP=OFF \

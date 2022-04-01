@@ -2,7 +2,7 @@
 
 source common.sh
 
-if [ ! -d src/freetype ]; then
+if [ ! -d sources/freetype ]; then
   pushd sources
   git clone https://gitlab.freedesktop.org/freetype/freetype.git freetype
   popd

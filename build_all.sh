@@ -16,6 +16,7 @@ emcc --clear-cache --clear-ports
 ./build_zstd.sh
 ./build_sqlite3.sh
 ./build_webshims.sh
+./build_curl.sh      # uses webshims
 
 # Minetest
 ./pull_minetest.sh
