@@ -32,6 +32,12 @@ unzip "$SRC_DIR"/"$ZIPFILE"
 
 rm -rf fsroot
 mkdir fsroot
+
+# Copy root certificates for OpenSSL
+mkdir -p fsroot/etc/ssl/certs
+# ca-certificates.crt may be a symlink
+cat /etc/ssl/certs/ca-certificates.crt > fsroot/etc/ssl/certs/ca-certificates.crt
+
 mv "$ZIPDIR" fsroot/minetest
 
 pushd fsroot/minetest

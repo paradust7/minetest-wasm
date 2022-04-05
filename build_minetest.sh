@@ -14,7 +14,8 @@ pushd minetest
 export EMSDK_EXTRA="-sUSE_SDL=2"
 export CFLAGS="$CFLAGS $EMSDK_EXTRA"
 export CXXFLAGS="$CXXFLAGS $EMSDK_EXTRA"
-export LDFLAGS="$LDFLAGS $EMSDK_EXTRA -sALLOW_MEMORY_GROWTH=1 -sPTHREAD_POOL_SIZE=20 -s EXPORTED_RUNTIME_METHODS=ccall,cwrap -L$INSTALL_DIR/lib -lemsocket"
+export LDFLAGS="$LDFLAGS $EMSDK_EXTRA -sALLOW_MEMORY_GROWTH=1 -sPTHREAD_POOL_SIZE=20 -s EXPORTED_RUNTIME_METHODS=ccall,cwrap"
+export LDFLAGS="$LDFLAGS -L$INSTALL_DIR/lib -lssl -lcrypto -lemsocket -lwebsocket.js"
 
 # Used by CMakeFiles.txt in the webport
 export FSROOT_DIR="$BUILD_DIR/fsroot"
@@ -25,9 +26,6 @@ export FSROOT_DIR="$BUILD_DIR/fsroot"
 echo > dummy.c
 emcc -c dummy.c -o dummy.o
 DUMMY_OBJECT="$(pwd)/dummy.o"
-
-#      -DCURL_LIBRARY="$INSTALL_DIR/lib/libcurl.a" \
-#      -DCURL_INCLUDE_DIR="$INSTALL_DIR/include" \
 
 if ! $INCREMENTAL; then
     emcmake cmake \
@@ -56,6 +54,8 @@ if ! $INCREMENTAL; then
       -DZSTD_INCLUDE_DIR="$INSTALL_DIR/include" \
       -DEGL_LIBRARY="$DUMMY_OBJECT" \
       -DEGL_INCLUDE_DIR="$EMSDK_SYSINCLUDE" \
+      -DCURL_LIBRARY="$INSTALL_DIR/lib/libcurl.a" \
+      -DCURL_INCLUDE_DIR="$INSTALL_DIR/include" \
       -G "Unix Makefiles" \
       "$BASE_DIR/minetest"
 fi

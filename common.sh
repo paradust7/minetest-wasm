@@ -15,16 +15,16 @@ test -d "$INSTALL_DIR"
 export BUILD_KIND=Release
 
 if [ $BUILD_KIND == Debug ]; then
-  export BUILD_CFLAGS="-g -gsource-map -O0 --source-map-base=/dev/"
-  export BUILD_LDFLAGS="-sSAFE_HEAP=1 -sASSERTIONS=2 -sDEMANGLE_SUPPORT=1"
+  export COMMON_CFLAGS="-g -gsource-map -O0 --source-map-base=/dev/"
+  export COMMON_LDFLAGS="-sSAFE_HEAP=1 -sASSERTIONS=2 -sDEMANGLE_SUPPORT=1"
 else
-  export BUILD_CFLAGS="-O2"
-  export BUILD_LDFLAGS=""
+  export COMMON_CFLAGS="-O2"
+  export COMMON_LDFLAGS=""
 fi
 
-export CFLAGS="$BUILD_CFLAGS -pthread -sUSE_PTHREADS=1 -fexceptions"
-export CXXFLAGS="$BUILD_CFLAGS -pthread -sUSE_PTHREADS=1 -fexceptions"
-export LDFLAGS="$BUILD_LDFLAGS -pthread -sUSE_PTHREADS=1 -fexceptions -sEXIT_RUNTIME"
+export CFLAGS="$COMMON_CFLAGS -pthread -sUSE_PTHREADS=1 -fexceptions"
+export CXXFLAGS="$COMMON_CFLAGS -pthread -sUSE_PTHREADS=1 -fexceptions"
+export LDFLAGS="$COMMON_LDFLAGS -pthread -sUSE_PTHREADS=1 -fexceptions -sEXIT_RUNTIME"
 
 export EMSDK_ROOT="$HOME/emsdk"
 export EMSDK_SYSLIB="${EMSDK_ROOT}/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten"

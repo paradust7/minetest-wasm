@@ -1,0 +1,25 @@
+diff -urN openssl-1.1.1n/Configurations/10-main.conf openssl-1.1.1n-fixed/Configurations/10-main.conf
+--- openssl-1.1.1n/Configurations/10-main.conf	2022-03-15 14:37:47.000000000 +0000
++++ openssl-1.1.1n-fixed/Configurations/10-main.conf	2022-04-05 10:48:27.348576840 +0000
+@@ -657,7 +657,8 @@
+     },
+     "linux-generic64" => {
+         inherit_from     => [ "linux-generic32" ],
+-        bn_ops           => "SIXTY_FOUR_BIT_LONG RC4_CHAR",
++        bn_ops           => "SIXTY_FOUR_BIT RC4_CHAR",
++        lib_cppflags     => add("-DBN_DIV2W"),
+     },
+ 
+     "linux-ppc" => {
+diff -urN openssl-1.1.1n/crypto/rand/rand_unix.c openssl-1.1.1n-fixed/crypto/rand/rand_unix.c
+--- openssl-1.1.1n/crypto/rand/rand_unix.c	2022-04-05 10:54:21.980130409 +0000
++++ openssl-1.1.1n-fixed/crypto/rand/rand_unix.c	2022-04-05 09:27:47.960526811 +0000
+@@ -369,7 +369,7 @@
+      * Note: Sometimes getentropy() can be provided but not implemented
+      * internally. So we need to check errno for ENOSYS
+      */
+-#  if defined(__GNUC__) && __GNUC__>=2 && defined(__ELF__) && !defined(__hpux)
++#  if defined(__EMSCRIPTEN__)
+     extern int getentropy(void *buffer, size_t length) __attribute__((weak));
+ 
+     if (getentropy != NULL) {
