@@ -17,7 +17,7 @@ emcc --clear-cache --clear-ports
 ./build_sqlite3.sh
 ./build_webshims.sh
 ./build_openssl.sh
-./build_curl.sh      # uses webshims, openssl
+./build_curl.sh      # uses webshims, openssl, zlib
 
 # Minetest
 ./pull_minetest.sh
