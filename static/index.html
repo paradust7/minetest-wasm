@@ -298,8 +298,8 @@
         } else {
             var headerHeight = document.getElementById('header').offsetHeight;
             var footerHeight = document.getElementById('footer').offsetHeight;
-            screenX = document.documentElement.clientWidth;
-            screenY = document.documentElement.clientHeight - headerHeight - footerHeight;
+            screenX = document.documentElement.clientWidth - 6;
+            screenY = document.documentElement.clientHeight - headerHeight - footerHeight - 6;
         }
 
         // Size of the viewport (after scaling)

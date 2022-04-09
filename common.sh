@@ -14,13 +14,24 @@ test -d "$INSTALL_DIR"
 # Debug / Release
 export BUILD_KIND=Release
 
-if [ $BUILD_KIND == Debug ]; then
-  export COMMON_CFLAGS="-g -gsource-map -O0 --source-map-base=/dev/"
-  export COMMON_LDFLAGS="-sSAFE_HEAP=1 -sASSERTIONS=2 -sDEMANGLE_SUPPORT=1"
-else
-  export COMMON_CFLAGS="-O2"
-  export COMMON_LDFLAGS=""
-fi
+case $BUILD_KIND in
+  Debug)
+    export COMMON_CFLAGS="-O0 -g -gsource-map --source-map-base=/dev/"
+    export COMMON_LDFLAGS="-sSAFE_HEAP=1 -sASSERTIONS=2 -sDEMANGLE_SUPPORT=1"
+    ;;
+  Profile)
+    export BUILD_KIND="Release"
+    export COMMON_CFLAGS="--profiling -O2 -g -gsource-map --source-map-base=/dev/"
+    export COMMON_LDFLAGS=""
+    ;;
+  Release)
+    export COMMON_CFLAGS="-O2"
+    export COMMON_LDFLAGS=""
+    ;;
+  *)
+    echo "Unknown build: $BUILD_KIND"
+    exit 1
+esac
 
 export CFLAGS="$COMMON_CFLAGS -pthread -sUSE_PTHREADS=1 -fexceptions"
 export CXXFLAGS="$COMMON_CFLAGS -pthread -sUSE_PTHREADS=1 -fexceptions"
