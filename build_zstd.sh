@@ -13,7 +13,7 @@ if [ ! -d sources/zstd ]; then
   popd
 fi
 
-pushd build
+pushd "$BUILD_DIR"
 rm -rf zstd
 mkdir zstd
 

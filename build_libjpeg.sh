@@ -8,7 +8,7 @@ if [ ! -d sources/libjpeg ]; then
   popd
 fi
 
-pushd build
+pushd "$BUILD_DIR"
 rm -rf libjpeg
 mkdir -p libjpeg
 

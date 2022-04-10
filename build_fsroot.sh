@@ -26,7 +26,7 @@ if [ ! -f sources/"$ZIPFILE" ]; then
     popd
 fi
 
-pushd build
+pushd "$BUILD_DIR"
 rm -rf "$ZIPDIR"
 unzip "$SRC_DIR"/"$ZIPFILE"
 

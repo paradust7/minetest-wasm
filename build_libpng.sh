@@ -8,7 +8,7 @@ if [ ! -d sources/libpng ]; then
   popd
 fi
 
-pushd build
+pushd "$BUILD_DIR"
 rm -rf libpng
 cp -a "$SRC_DIR/libpng" libpng
 

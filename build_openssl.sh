@@ -17,7 +17,7 @@ if ! sha256sum sources/"$TARBALL" | grep -q 40dceb51a4f6a5275bde0e6bf20ef4b91bfc
   exit 1
 fi
 
-pushd build
+pushd "$BUILD_DIR"
 
 rm -rf "$TARDIR"
 tar -zxvf "$SRC_DIR/$TARBALL"

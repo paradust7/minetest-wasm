@@ -4,7 +4,7 @@ source common.sh
 
 INCREMENTAL=${INCREMENTAL:-false}
 
-pushd build
+pushd "$BUILD_DIR"
 if ! $INCREMENTAL; then
   rm -rf minetest
 fi
@@ -14,7 +14,7 @@ pushd minetest
 export EMSDK_EXTRA="-sUSE_SDL=2"
 export CFLAGS="$CFLAGS $EMSDK_EXTRA"
 export CXXFLAGS="$CXXFLAGS $EMSDK_EXTRA"
-export LDFLAGS="$LDFLAGS $EMSDK_EXTRA -sPTHREAD_POOL_SIZE=20 -s EXPORTED_RUNTIME_METHODS=ccall,cwrap -s INITIAL_MEMORY=2093796544"
+export LDFLAGS="$LDFLAGS $EMSDK_EXTRA -sPTHREAD_POOL_SIZE=20 -s EXPORTED_RUNTIME_METHODS=ccall,cwrap -s INITIAL_MEMORY=2013265920"
 export LDFLAGS="$LDFLAGS -L$INSTALL_DIR/lib -lssl -lcrypto -lemsocket -lwebsocket.js"
 
 # Used by CMakeFiles.txt in the webport
@@ -32,7 +32,7 @@ if ! $INCREMENTAL; then
       -DENABLE_SYSTEM_GMP=OFF \
       -DRUN_IN_PLACE=TRUE \
       -DENABLE_GLES=TRUE \
-      -DCMAKE_BUILD_TYPE="$BUILD_KIND" \
+      -DCMAKE_BUILD_TYPE="$MINETEST_BUILD_TYPE" \
       -DZLIB_INCLUDE_DIR="$INSTALL_DIR/include" \
       -DZLIB_LIBRARY="$INSTALL_DIR/lib/libz.a" \
       -DJPEG_INCLUDE_DIR="$INSTALL_DIR/include" \

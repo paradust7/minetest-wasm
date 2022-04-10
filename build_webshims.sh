@@ -8,7 +8,7 @@ if [ ! -d sources/webshims ]; then
   popd
 fi
 
-pushd build
+pushd "$BUILD_DIR"
 rm -rf webshims
 mkdir webshims
 pushd webshims

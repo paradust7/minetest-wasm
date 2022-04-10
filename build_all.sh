@@ -1,6 +1,8 @@
 #!/bin/bash -eux
 
-rm -rf build install www
+source common.sh
+
+rm -rf "$BUILD_DIR" "$INSTALL_DIR" "$WWW_DIR"
 
 # Emscripten comes with ports for most of these, but they don't compile
 # with pthread support. Wipe the cache and build them ourselves.

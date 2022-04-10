@@ -17,16 +17,16 @@ if ! sha256sum sources/"$TARBALL" | grep -q 46d9a0400a33408fd992770b04a44a7434b3
   exit 1
 fi
 
-pushd build
+pushd "$BUILD_DIR"
 rm -rf "$TARDIR"
 tar -jxvf "$SRC_DIR/$TARBALL"
 
 # Wrap socket ops
 $SRC_DIR/webshims/src/emsocket/wrap.py "$TARDIR"
 
-rm -rf curl-build
-mkdir curl-build
-pushd curl-build
+rm -rf curl
+mkdir curl
+pushd curl
 
 # For emsocket.h
 export CFLAGS="-I${INSTALL_DIR}/include"
@@ -43,7 +43,7 @@ emcmake cmake \
   -DBUILD_CURL_EXE=OFF \
   -DBUILD_SHARED_LIBS=OFF \
   -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" \
-  ../"$TARDIR"
+  "$BUILD_DIR/$TARDIR"
 
 emmake make -j4
 emmake make install

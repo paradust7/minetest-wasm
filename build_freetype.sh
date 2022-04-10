@@ -8,7 +8,7 @@ if [ ! -d sources/freetype ]; then
   popd
 fi
 
-pushd build
+pushd "$BUILD_DIR"
 rm -rf freetype
 mkdir freetype
 

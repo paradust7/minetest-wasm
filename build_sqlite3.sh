@@ -8,7 +8,7 @@ if [ ! -f sources/sqlite.tar.gz ]; then
   popd
 fi
 
-pushd build
+pushd "$BUILD_DIR"
 rm -rf sqlite
 tar -zxvf "$SRC_DIR/sqlite.tar.gz"
 
