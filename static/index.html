@@ -57,7 +57,7 @@
         outline: none;
       }
 
-      .playbutton {
+      .launchbutton {
           position: absolute;
           width: 300px;
           height: 120px;
@@ -102,7 +102,7 @@
   </div>
 
   <div class="emscripten">
-    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" onclick="doPlay()" tabindex=-1 width="1024" height="600">
+    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" onclick="doLaunch()" tabindex=-1 width="1024" height="600">
     </canvas>
   </div>
 
@@ -129,42 +129,51 @@
       var consoleLengthMax = 1000;
       var consoleTextLast = 0;
       var consoleDirty = false;
-      var playOK = false;
-      var didPlay = false;
+      var wasmReady = false;
+      var invokedMain = false;
 
-      // Called by the MainLoop when it is ready
-      function mainloop_ready_to_play() {
-          drawPlayButton();
-          playOK = true;
+      // Called by the MainLoop when main() is ready to be called
+      function emloop_ready() {
+          wasmReady = true;
+          emloop_invoke_main = cwrap("emloop_invoke_main", null, ["number", "number"]);
+	  irrlicht_want_pointerlock = cwrap("irrlicht_want_pointerlock", "number");
+          irrlicht_resize = cwrap("irrlicht_resize", null, ["number", "number"]);
+          showLaunchButton();
       }
 
-      var thePlayButton;
-      function drawPlayButton() {
-          if (thePlayButton) return;
-
-          var canvas = document.getElementById('canvas');
-          var canvasRect = canvas.getBoundingClientRect();
-          var midX = Math.floor((canvasRect.top + canvasRect.bottom) / 2);
-          var midY = Math.floor((canvasRect.left + canvasRect.right) / 2);
-          thePlayButton = document.createElement('button');
-          thePlayButton.className = 'playbutton';
-          thePlayButton.innerText = 'Click to Launch';
-          thePlayButton.style.left = (midY - 300/2) + 'px';
-          thePlayButton.style.top = (midX - 120/2) + 'px';
-          thePlayButton.addEventListener('click', doPlay);
-          document.body.appendChild(thePlayButton);
+      var launchButton;
+      function showLaunchButton() {
+          if (launchButton) return;
+          launchButton = document.createElement('button');
+          launchButton.className = 'launchbutton';
+          launchButton.innerText = 'Click to Launch';
+          launchButton.addEventListener('click', doLaunch);
+          document.body.appendChild(launchButton);
+          fixGeometry();
       }
 
-      function doPlay() {
-        if (thePlayButton) {
-            thePlayButton.remove();
-            thePlayButton = null;
+      function makeArgv(args) {
+          // Assuming 4-byte pointers
+          const argv = _malloc((args.length + 1) * 4);
+          let i;
+          for (i = 0; i < args.length; i++) {
+              HEAPU32[(argv >> 2) + i] = allocateUTF8(args[i]);
+          }
+          HEAPU32[(argv >> 2) + i] = 0; // argv[argc] == NULL
+          return [i, argv];
+      }
+
+      function doLaunch() {
+        if (launchButton) {
+            launchButton.remove();
+            launchButton = null;
         }
 
-        if (playOK && !didPlay) {
-            setupWrappers();
-            didPlay = true;
-            mainloop_play_wrapped();
+        if (!invokedMain && wasmReady) {
+            invokedMain = true;
+            const args = ['./minetest'];
+            const [argc, argv] = makeArgv(args);
+            emloop_invoke_main(argc, argv);
             // irrlicht initialization resets the width/height
             fixGeometry();
         }
@@ -243,22 +252,13 @@
         };
       };
       var pointerlock_pending = false;
-      var mainloop_play_wrapped;
+      var emloop_invoke_main;
       var irrlicht_want_pointerlock;
       var irrlicht_resize;
 
-      function setupWrappers() {
-        if (!mainloop_play_wrapped || !irrlicht_want_pointerlock || !irrlicht_resize) {
-          mainloop_play_wrapped = cwrap("mainloop_play");
-	  irrlicht_want_pointerlock = cwrap("irrlicht_want_pointerlock", "number");
-          irrlicht_resize = cwrap("irrlicht_resize", null, ['number', 'number']);
-        }
-      }
-
       function fullscreen_button() {
         var canvas = document.getElementById('canvas');
-        if (playOK) {
-          setupWrappers();
+        if (wasmReady) {
           var alsoLockPointer = irrlicht_want_pointerlock();
           // This calls Module['onFullScreen'] when finished, which calls fixGeometry.
           Module.requestFullscreen(alsoLockPointer, false);
@@ -275,8 +275,7 @@
           }
           // Trigger SDL window resize.
           // This should happen automatically, it's disappointing that it doesn't.
-          if (playOK) {
-              setupWrappers();
+          if (wasmReady) {
               irrlicht_resize(width, height);
           }
       }
@@ -348,9 +347,17 @@
             canvas.style.removeProperty("width");
             canvas.style.removeProperty("height");
         }
+
+        if (launchButton) {
+            var canvasRect = canvas.getBoundingClientRect();
+            var midX = Math.floor((canvasRect.top + canvasRect.bottom) / 2);
+            var midY = Math.floor((canvasRect.left + canvasRect.right) / 2);
+            launchButton.style.left = (midY - 300/2) + 'px';
+            launchButton.style.top = (midX - 120/2) + 'px';
+        }
       }
+      window.addEventListener('load', fixGeometry);
       window.addEventListener('resize', fixGeometry);
-      fixGeometry();
     </script>
     <script async type="text/javascript" src="minetest.js"></script>
   </body>
