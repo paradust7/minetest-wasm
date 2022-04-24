@@ -1,0 +1,16 @@
+--- emsdk1/upstream/emscripten/tools/file_packager.py	2022-03-24 19:45:39.000000000 +0000
++++ emsdk2/upstream/emscripten/tools/file_packager.py	2022-03-22 10:13:11.332849695 +0000
+@@ -686,8 +686,12 @@
+       use_data = '''// Reuse the bytearray from the XHR as the source for file reads.
+           DataRequest.prototype.byteArray = byteArray;
+           var files = metadata['files'];
++          function make_callback(i) {
++            var req = DataRequest.prototype.requests[files[i].filename];
++            return () => {req.onload()};
++          }
+           for (var i = 0; i < files.length; ++i) {
+-            DataRequest.prototype.requests[files[i].filename].onload();
++            setTimeout(make_callback(i));
+           }'''
+       use_data += ("          Module['removeRunDependency']('datafile_%s');\n"
+                    % js_manipulation.escape_for_js_string(data_target))
