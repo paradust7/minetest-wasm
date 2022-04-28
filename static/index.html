@@ -358,6 +358,10 @@
       }
       window.addEventListener('load', fixGeometry);
       window.addEventListener('resize', fixGeometry);
+
+      // Needed to prevent special keys from triggering browser actions, like
+      // F5 causing page reload.
+      document.addEventListener('keydown', (e) => { e.preventDefault(); });
     </script>
     <script async type="text/javascript" src="minetest.js"></script>
   </body>
