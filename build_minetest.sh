@@ -26,9 +26,12 @@ export FSROOT_DIR="$BUILD_DIR/fsroot"
 echo > dummy.c
 emcc -c dummy.c -o dummy.o
 DUMMY_OBJECT="$(pwd)/dummy.o"
+mkdir -p dummy_dir
+DUMMY_INCLUDE_DIR="$(pwd)/dummy_dir"
 
 if ! $INCREMENTAL; then
     emcmake cmake \
+      -DCMAKE_VERBOSE_MAKEFILE=ON \
       -DENABLE_SYSTEM_GMP=OFF \
       -DRUN_IN_PLACE=TRUE \
       -DENABLE_GLES=TRUE \
@@ -46,14 +49,14 @@ if ! $INCREMENTAL; then
       -DVORBISFILE_LIBRARY="$INSTALL_DIR/lib/libvorbisfile.a" \
       -DFREETYPE_LIBRARY="$INSTALL_DIR/lib/libfreetype.a" \
       -DFREETYPE_INCLUDE_DIRS="$INSTALL_DIR/include/freetype2" \
-      -DOPENGLES2_INCLUDE_DIR="$EMSDK_SYSINCLUDE" \
+      -DOPENGLES2_INCLUDE_DIR="$DUMMY_INCLUDE_DIR" \
       -DOPENGLES2_LIBRARY="$DUMMY_OBJECT" \
       -DSQLITE3_LIBRARY="$INSTALL_DIR/lib/libsqlite3.a" \
       -DSQLITE3_INCLUDE_DIR="$INSTALL_DIR/include" \
       -DZSTD_LIBRARY="$INSTALL_DIR/lib/libzstd.a" \
       -DZSTD_INCLUDE_DIR="$INSTALL_DIR/include" \
       -DEGL_LIBRARY="$DUMMY_OBJECT" \
-      -DEGL_INCLUDE_DIR="$EMSDK_SYSINCLUDE" \
+      -DEGL_INCLUDE_DIR="$DUMMY_INCLUDE_DIR" \
       -DCURL_LIBRARY="$INSTALL_DIR/lib/libcurl.a" \
       -DCURL_INCLUDE_DIR="$INSTALL_DIR/include" \
       -G "Unix Makefiles" \
