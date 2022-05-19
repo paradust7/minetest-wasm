@@ -14,7 +14,9 @@ Pre-requisites
 --------------
 The Emscripten SDK (emsdk) must be installed, activated, and in the PATH.
 It is assumed to be installed in $HOME/emsdk (edit `common.sh` to change this).
-The emsdk directory must be patched by running `./apply_patches.sh` exactly once.
+The emsdk directory must be patched exactly once by running:
+
+    ./apply_patches.sh
 
 Building
 ---------
