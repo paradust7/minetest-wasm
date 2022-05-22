@@ -13,6 +13,7 @@
       }
 
       .emscripten {
+        color: #aaaaaa;
         padding-right: 0;
         margin-left: auto;
         margin-right: auto;
@@ -71,12 +72,12 @@
   <div id="header">
 
   <div class="emscripten">
-    <span id='controls'>
+    <span id="controls">
       <span>
         <select id="resolution" onchange="fixGeometry()">
-          <option value="high">High</option>
+          <option value="high">High Res</option>
           <option value="medium">Medium</option>
-          <option value="low">Low</option>
+          <option value="low">Low Res</option>
         </select>
       </span>
       <span>
@@ -90,8 +91,9 @@
           <option value="1:1">1:1</option>
         </select>
       </span>
-      <span><input type="button" value="Toggle Fullscreen" onclick="fullscreen_button()"></span>
-      <span><input type="button" value="Toggle Console" onclick="toggle_console()"></span>
+      <!-- <span><input type="button" value="Toggle Fullscreen" onclick="fullscreen_button()"></span> -->
+      <span><input id="console_button" type="button" value="Show Console" onclick="toggle_console()"></span>
+      <span>F11 Full Screen</span>
     </span>
   </div>
 
@@ -118,8 +120,10 @@
       var progressElement = document.getElementById('progress');
 
       function toggle_console() {
+        var button = document.getElementById('console_button');
         var element = document.getElementById('output');
         element.style.display = (element.style.display == 'block') ? 'none' : 'block';
+        button.value = (element.style.display == 'none') ? 'Show Console' : 'Hide Console';
         fixGeometry();
       }
 
@@ -283,7 +287,18 @@
       var resolutionSelect = document.getElementById('resolution');
       var aspectRatioSelect = document.getElementById('aspectRatio');
 
-      function fixGeometry() {
+      function now() {
+          return (new Date()).getTime();
+      }
+
+      // Only allow fixGeometry to be called every 250ms
+      // Firefox calls this way too often, causing flicker.
+      var fixGeometryPause = 0;
+      function fixGeometry(override) {
+        if (!override && now() < fixGeometryPause) {
+                return;
+        }
+
         var canvas = document.getElementById('canvas');
         var resolution = resolutionSelect.value;
         var aspectRatio = aspectRatioSelect.value;
@@ -295,6 +310,11 @@
             screenX = screen.width;
             screenY = screen.height;
         } else {
+            // F11-style full screen
+            var controls = document.getElementById('controls');
+            var maximized = !window.screenTop && !window.screenY;
+            controls.style = maximized ? 'display: none' : '';
+
             var headerHeight = document.getElementById('header').offsetHeight;
             var footerHeight = document.getElementById('footer').offsetHeight;
             screenX = document.documentElement.clientWidth - 6;
@@ -356,12 +376,27 @@
             launchButton.style.top = (midX - 120/2) + 'px';
         }
       }
-      window.addEventListener('load', fixGeometry);
-      window.addEventListener('resize', fixGeometry);
+      window.addEventListener('load', () => { fixGeometry(); });
+      window.addEventListener('resize', () => { fixGeometry(); });
 
       // Needed to prevent special keys from triggering browser actions, like
       // F5 causing page reload.
-      document.addEventListener('keydown', (e) => { e.preventDefault(); });
+      document.addEventListener('keydown', (e) => {
+          // Allow F11 to go full screen
+          if (e.code == "F11") {
+              // On Firefox, F11 is animated. The window smoothly grows to
+              // full screen over 2 seconds. This calls fixGeometry()
+              // hundreds of times, causing flickering. Instead, call
+              // fixGeometry every 500ms for 2.5 seconds. By then it should
+              // be finished.
+              fixGeometryPause = now() + 2000;
+              for (var delay = 100; delay <= 2600; delay += 500) {
+                  setTimeout(() => { fixGeometry(true); }, delay);
+              }
+          } else {
+              e.preventDefault();
+          }
+      });
     </script>
     <script async type="text/javascript" src="minetest.js"></script>
   </body>
