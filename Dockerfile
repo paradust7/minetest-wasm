@@ -6,15 +6,18 @@ RUN apt-get update &&\
 	DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y wget python3 git build-essential cmake tclsh zip
 
 # emscripten
-RUN wget -O - https://github.com/emscripten-core/emsdk/archive/refs/heads/main.tar.gz | tar xzf -
+RUN cd /root &&\
+	wget -O - https://github.com/emscripten-core/emsdk/archive/refs/heads/main.tar.gz | tar xzf - &&\
+	mv emsdk-main emsdk
 
-# build
+# build/patch
 COPY . /data
-RUN cd /emsdk-main &&\
+RUN cd /data &&\
+	./apply_patches.sh &&\
+	cd /root/emsdk &&\
 	./emsdk install ${EMSDK_VERSION} &&\
 	./emsdk activate ${EMSDK_VERSION} &&\
-	cat /data/emcc.patch | patch -p1 &&\
-	. /emsdk-main/emsdk_env.sh &&\
+	. /root/emsdk/emsdk_env.sh &&\
 	cd /data &&\
 	./build_all.sh
 
