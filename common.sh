@@ -30,7 +30,7 @@ esac
 
 SRC_DIR="$BASE_DIR/sources"
 BUILD_DIR="$BASE_DIR/build$BUILD_SUFFIX"
-INSTALL_DIR="$BASE_DIR/install"
+INSTALL_DIR="$BUILD_DIR/install"
 WWW_DIR="$BASE_DIR/www"
 mkdir -p "$SRC_DIR" "$BUILD_DIR" "$INSTALL_DIR"
 

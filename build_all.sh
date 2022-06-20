@@ -2,7 +2,8 @@
 
 source common.sh
 
-rm -rf "$BUILD_DIR" "$INSTALL_DIR" "$WWW_DIR"
+rm -rf "$BUILD_DIR"
+rm -rf "$WWW_DIR"
 
 # Emscripten comes with ports for most of these, but they don't compile
 # with pthread support. Wipe the cache and build them ourselves.
