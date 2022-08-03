@@ -305,6 +305,9 @@
         var screenX;
         var screenY;
 
+	// Prevent the controls from getting focus
+	canvas.focus();
+
         var isFullScreen = document.fullscreenElement ? true : false;
         if (isFullScreen) {
             screenX = screen.width;
@@ -385,16 +388,14 @@
           // Allow F11 to go full screen
           if (e.code == "F11") {
               // On Firefox, F11 is animated. The window smoothly grows to
-              // full screen over 2 seconds. This calls fixGeometry()
-              // hundreds of times, causing flickering. Instead, call
-              // fixGeometry every 500ms for 2.5 seconds. By then it should
-              // be finished.
+              // full screen over several seconds. During this transition, the 'resize'
+              // event is triggered hundreds of times. To prevent flickering, have
+              // fixGeometry ignore repeated calls, and instead resize every 500ms
+              // for 2.5 seconds. By then it should be finished.
               fixGeometryPause = now() + 2000;
               for (var delay = 100; delay <= 2600; delay += 500) {
                   setTimeout(() => { fixGeometry(true); }, delay);
               }
-          } else {
-              e.preventDefault();
           }
       });
     </script>
