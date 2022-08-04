@@ -9,6 +9,8 @@ rm -rf "$WWW_DIR"
 # with pthread support. Wipe the cache and build them ourselves.
 emcc --clear-cache --clear-ports
 
+./fetch_sources.sh
+
 # Dependencies
 ./build_zlib.sh
 ./build_libjpeg.sh

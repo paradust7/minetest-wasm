@@ -1,7 +1,6 @@
 Dockerfile
 build/
 build-*/
-sources
 minetest
 www
 .git

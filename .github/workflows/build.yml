@@ -11,4 +11,4 @@ jobs:
       - name: Build docker image
         run: |
           docker build . -t mtweb
-          docker run --rm mtweb node --experimental-wasm-threads /minetest-wasm/www/minetest.js
+          docker run --rm mtweb ls -la /minetest-wasm/www

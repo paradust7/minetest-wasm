@@ -1,7 +1,12 @@
 minetest/
 build/
 build-*/
-sources/
 install/
 www/
 upload.sh
+sources/zlib
+sources/libjpeg
+sources/libpng
+sources/freetype
+sources/zstd
+sources/webshims

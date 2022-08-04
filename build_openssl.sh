@@ -2,29 +2,12 @@
 
 source common.sh
 
-URL="https://www.openssl.org/source/openssl-1.1.1n.tar.gz"
-TARBALL="openssl-1.1.1n.tar.gz"
-TARDIR="openssl-1.1.1n"
+unpack_source openssl
 
-if [ ! -f sources/"$TARBALL" ]; then
-  pushd sources
-  wget "$URL" -O "$TARBALL"
-  popd
-fi
+pushd "$BUILD_DIR/openssl"
 
-if ! sha256sum sources/"$TARBALL" | grep -q 40dceb51a4f6a5275bde0e6bf20ef4b91bfc32ed57c0552e2e8e15463372b17a; then
-  echo "Wrong checksum for $URL"
-  exit 1
-fi
+"$SOURCES_DIR/webshims/src/emsocket/wrap.py" .
 
-pushd "$BUILD_DIR"
-
-rm -rf "$TARDIR"
-tar -zxvf "$SRC_DIR/$TARBALL"
-
-$SRC_DIR/webshims/src/emsocket/wrap.py "$TARDIR"
-
-pushd "$TARDIR"
 patch -p1 < "$BASE_DIR"/openssl.patch
 
 export CFLAGS="-I${INSTALL_DIR}/include -DPEDANTIC"
