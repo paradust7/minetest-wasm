@@ -42,3 +42,15 @@ done
 
 # Copy the irrlicht shaders
 cp -r "$IRRLICHT_REPO/media/Shaders" client/shaders/Irrlicht
+
+popd
+
+# Make fsroot.tar
+rm -f fsroot.tar
+pushd fsroot
+tar cf ../fsroot.tar .
+popd
+
+# Compress with ZSTD
+rm -f fsroot.tar.zst
+zstd --ultra -22 fsroot.tar

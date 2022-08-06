@@ -19,6 +19,7 @@ emcc --clear-cache --clear-ports
 ./build_libvorbis.sh # uses ogg
 ./build_freetype.sh  # uses zlib, libpng
 ./build_zstd.sh
+./build_libarchive.sh # uses zstd
 ./build_sqlite3.sh
 ./build_webshims.sh
 ./build_openssl.sh

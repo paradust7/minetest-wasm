@@ -135,13 +135,32 @@
       var consoleDirty = false;
       var wasmReady = false;
       var invokedMain = false;
+      var packsReady = false;
+      var packs = [];
 
-      // Called by the MainLoop when main() is ready to be called
+      // Called by MainLoop when the wasm module is ready
       function emloop_ready() {
           wasmReady = true;
           emloop_invoke_main = cwrap("emloop_invoke_main", null, ["number", "number"]);
-	  irrlicht_want_pointerlock = cwrap("irrlicht_want_pointerlock", "number");
+          emloop_install_pack = cwrap("emloop_install_pack", null, ["number", "number", "number"]);
+          irrlicht_want_pointerlock = cwrap("irrlicht_want_pointerlock", "number");
           irrlicht_resize = cwrap("irrlicht_resize", null, ["number", "number"]);
+          maybeStart();
+      }
+
+      function all_packs_ready() {
+          packsReady = true;
+          maybeStart();
+      }
+
+      function maybeStart() {
+          if (!wasmReady || !packsReady) return;
+          if (packs.length > 0) {
+              for (const [name, data] of packs) {
+                  installPack(name, data);
+              }
+              packs = [];
+          }
           showLaunchButton();
       }
 
@@ -167,6 +186,67 @@
           return [i, argv];
       }
 
+      function fetchPacks() {
+          const params = new URLSearchParams(window.location.search);
+          fetchPack('base');
+          if (params.has('gameid')) {
+              const gameid = params.get('gameid');
+              if (gameid != 'minetest_game' && gameid != 'devtest') {
+                  fetchPack(params.get('gameid'));
+              }
+          }
+      }
+
+      var pendingPacks = 0;
+      function fetchPack(name) {
+          pendingPacks += 1;
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', name + '.pack', true);
+          xhr.responseType = 'arraybuffer';
+          xhr.onprogress = (event) => {
+              console.log(`Fetched ${event.loaded} of ${event.total}`);
+          };
+          xhr.onload = (event) => {
+              if (xhr.status == 200 || xhr.status == 304 || xhr.status == 206 || (xhr.status == 0 && xhr.response)) {
+                  packs.push([name, xhr.response]);
+                  pendingPacks -= 1;
+                  if (pendingPacks == 0) {
+                      all_packs_ready();
+                  }
+              } else {
+                  throw new Error(xhr.statusText + " : " + xhr.responseURL);
+              }
+          };
+          xhr.send(null);
+      }
+
+      function installPack(name, arrayBuffer) {
+          const arr = new Uint8Array(arrayBuffer);
+          const data = _malloc(arr.length * arr.BYTES_PER_ELEMENT);
+          HEAP8.set(arr, data);
+          emloop_install_pack(allocateUTF8(name), data, arr.length);
+          _free(data);
+      }
+
+      function parseQueryArgs() {
+          const args = ['./minetest'];
+          const params = new URLSearchParams(window.location.search);
+          const keyList0 = ['go', 'server'];
+          const keyList1 = ['name', 'gameid', 'address', 'address', 'port'];
+          for (const key of keyList0) {
+              if (params.has(key)) {
+                  args.push('--' + key);
+              }
+          }
+          for (const key of keyList1) {
+              if (params.has(key)) {
+                  args.push('--' + key);
+                  args.push(params.get(key));
+              }
+          }
+          return args;
+      }
+
       function doLaunch() {
         if (launchButton) {
             launchButton.remove();
@@ -175,7 +255,7 @@
 
         if (!invokedMain && wasmReady) {
             invokedMain = true;
-            const args = ['./minetest'];
+            const args = parseQueryArgs();
             const [argc, argv] = makeArgv(args);
             emloop_invoke_main(argc, argv);
             // irrlicht initialization resets the width/height
@@ -398,6 +478,7 @@
               }
           }
       });
+      fetchPacks();
     </script>
     <script async type="text/javascript" src="minetest.js"></script>
   </body>

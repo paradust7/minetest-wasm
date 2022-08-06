@@ -17,6 +17,7 @@ getsource "https://www.sqlite.org/src/tarball/698edb77/SQLite-698edb77.tar.gz" b
 getsource "https://www.openssl.org/source/openssl-1.1.1n.tar.gz" 40dceb51a4f6a5275bde0e6bf20ef4b91bfc32ed57c0552e2e8e15463372b17a
 getsource "https://curl.se/download/curl-7.82.0.tar.bz2" 46d9a0400a33408fd992770b04a44a7434b3036f2e8089ac28b57573d59d371f
 getsource "https://github.com/minetest/minetest/releases/download/5.5.1/minetest-5.5.1-win64.zip" 9be48fb4126312b0d8fd048d1ab06d59b3109f6fe037fcd5ab65b99507e68a5f
+getsource "https://www.libarchive.org/downloads/libarchive-3.6.1.tar.xz" 5a411aceb978f43e626f0c2d1812ddd8807b645ed892453acabd532376c148e6
 
 # These are never checked into the repo, since they are separate git repos.
 # Be sure to add new entries here to .gitignore

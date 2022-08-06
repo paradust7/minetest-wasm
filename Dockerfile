@@ -10,7 +10,8 @@ RUN \
 		build-essential \
 		cmake \
 		tclsh \
-		zip
+		zip \
+		zstd
 
 COPY . /minetest-wasm
 

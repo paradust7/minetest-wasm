@@ -14,11 +14,8 @@ pushd minetest
 export EMSDK_EXTRA="-sUSE_SDL=2"
 export CFLAGS="$CFLAGS $EMSDK_EXTRA"
 export CXXFLAGS="$CXXFLAGS $EMSDK_EXTRA"
-export LDFLAGS="$LDFLAGS $EMSDK_EXTRA -sPTHREAD_POOL_SIZE=20 -s EXPORTED_RUNTIME_METHODS=ccall,cwrap -s INITIAL_MEMORY=2013265920 -sMIN_WEBGL_VERSION=2 -sUSE_WEBGL2"
-export LDFLAGS="$LDFLAGS -L$INSTALL_DIR/lib -lssl -lcrypto -lemsocket -lwebsocket.js"
-
-# Used by CMakeFiles.txt in the webport
-export FSROOT_DIR="$BUILD_DIR/fsroot"
+export LDFLAGS="$LDFLAGS $EMSDK_EXTRA -sPTHREAD_POOL_SIZE=20 -s EXPORTED_RUNTIME_METHODS=ccall,cwrap -s INITIAL_MEMORY=2013265920 -sMIN_WEBGL_VERSION=2 -sUSE_WEBGL2 -sWASMFS=1"
+export LDFLAGS="$LDFLAGS -L$INSTALL_DIR/lib -larchive -lssl -lcrypto -lemsocket -lwebsocket.js"
 
 # Create a dummy .o file to use as a substitute for the OpenGLES2 / EGL libraries,
 # since Emscripten doesn't actually provide those. (the symbols are resolved through
@@ -64,17 +61,13 @@ if ! $INCREMENTAL; then
       "$BASE_DIR/minetest"
 fi
 
-if $INCREMENTAL; then
-  emmake make -j1
-else
-  emmake make -j4
-fi
+emmake make -j4
 
 echo "Installing into www/"
 rm -rf "$WWW_DIR"
 mkdir "$WWW_DIR"
 
-FILES="minetest.data minetest.js minetest.wasm minetest.worker.js"
+FILES="minetest.js minetest.wasm minetest.worker.js"
 
 for I in $FILES; do
   cp src/"$I" "$WWW_DIR"
@@ -86,6 +79,8 @@ fi
 
 cp "$BASE_DIR/static/index.html" "$WWW_DIR"
 cp "$BASE_DIR/static/.htaccess" "$WWW_DIR"
+
+cp "$BUILD_DIR/fsroot.tar.zst" "$WWW_DIR/base.pack"
 
 echo "DONE"
 
