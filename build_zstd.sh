@@ -7,6 +7,10 @@ rm -rf zstd-build
 mkdir zstd-build
 
 pushd zstd-build
+
+# makefile can't handle parallelism
+export MAKEFLAGS=""
+
 export CFLAGS="-D_POSIX_SOURCE=1"
 export CXXFLAGS="-D_POSIX_SOURCE=1"
 emcmake cmake \

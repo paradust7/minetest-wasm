@@ -61,7 +61,7 @@ if ! $INCREMENTAL; then
       "$BASE_DIR/minetest"
 fi
 
-emmake make -j4
+emmake make
 
 echo "Installing into www/"
 rm -rf "$WWW_DIR"

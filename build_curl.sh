@@ -30,7 +30,7 @@ emcmake cmake \
   -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" \
   "$BUILD_DIR/curl"
 
-emmake make -j4
+emmake make
 emmake make install
 
 echo "curl OK"

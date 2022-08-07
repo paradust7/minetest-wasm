@@ -34,6 +34,8 @@ INSTALL_DIR="$BUILD_DIR/install"
 WWW_DIR="$BASE_DIR/www"
 mkdir -p "$SOURCES_DIR" "$BUILD_DIR" "$INSTALL_DIR"
 
+export MAKEFLAGS="-j$(nproc)"
+
 export CFLAGS="$COMMON_CFLAGS -pthread -sUSE_PTHREADS=1 -fexceptions"
 export CXXFLAGS="$COMMON_CFLAGS -pthread -sUSE_PTHREADS=1 -fexceptions"
 export LDFLAGS="$COMMON_LDFLAGS -pthread -sUSE_PTHREADS=1 -fexceptions -sEXIT_RUNTIME"
