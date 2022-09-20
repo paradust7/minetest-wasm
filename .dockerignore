@@ -5,4 +5,4 @@ minetest
 www
 .git
 .github
-upload.sh
+deploy.sh

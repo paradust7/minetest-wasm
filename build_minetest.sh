@@ -87,7 +87,7 @@ echo "DONE"
 popd
 popd
 
-# Optional script to upload to webserver
-if [ -f upload.sh ]; then
-  ./upload.sh
+# Optional step to deploy to webserver
+if [ -f deploy.sh ]; then
+  ./deploy.sh
 fi

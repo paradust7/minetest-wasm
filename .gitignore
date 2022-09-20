@@ -3,7 +3,7 @@ build/
 build-*/
 install/
 www/
-upload.sh
+deploy.sh
 sources/zlib
 sources/libjpeg
 sources/libpng
