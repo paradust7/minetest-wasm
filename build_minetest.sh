@@ -78,6 +78,7 @@ if [ -f src/minetest.wasm.map ]; then
 fi
 
 cp "$BASE_DIR/static/index.html" "$WWW_DIR"
+cp "$BASE_DIR/static/launcher.js" "$WWW_DIR"
 cp "$BASE_DIR/static/.htaccess" "$WWW_DIR"
 
 cp "$BUILD_DIR/fsroot.tar.zst" "$WWW_DIR/base.pack"
