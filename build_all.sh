@@ -29,3 +29,6 @@ emcc --clear-cache --clear-ports
 ./pull_minetest.sh
 ./build_fsroot.sh
 ./build_minetest.sh
+
+# Finished product
+./build_www.sh

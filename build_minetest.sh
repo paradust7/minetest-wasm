@@ -62,33 +62,3 @@ if ! $INCREMENTAL; then
 fi
 
 emmake make
-
-echo "Installing into www/"
-rm -rf "$WWW_DIR"
-mkdir "$WWW_DIR"
-
-FILES="minetest.js minetest.wasm minetest.worker.js"
-
-for I in $FILES; do
-  cp src/"$I" "$WWW_DIR"
-done
-
-if [ -f src/minetest.wasm.map ]; then
-  cp src/minetest.wasm.map "$WWW_DIR"
-fi
-
-cp "$BASE_DIR/static/index.html" "$WWW_DIR"
-cp "$BASE_DIR/static/launcher.js" "$WWW_DIR"
-cp "$BASE_DIR/static/.htaccess" "$WWW_DIR"
-
-cp "$BUILD_DIR/fsroot.tar.zst" "$WWW_DIR/base.pack"
-
-echo "DONE"
-
-popd
-popd
-
-# Optional step to deploy to webserver
-if [ -f deploy.sh ]; then
-  ./deploy.sh
-fi

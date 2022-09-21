@@ -1,3 +1,7 @@
+// These are relative paths
+const RELEASE_DIR = '%__RELEASE_UUID__%'; // set by build_www.sh
+const PACKS_DIR = RELEASE_DIR + '/packs';
+
 const rtCSS = `
 body {
   font-family: arial;
@@ -194,7 +198,7 @@ var pendingPacks = 0;
 function fetchPack(name) {
     pendingPacks += 1;
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', name + '.pack', true);
+    xhr.open('GET', PACKS_DIR + '/' + name + '.pack', true);
     xhr.responseType = 'arraybuffer';
     xhr.onprogress = (event) => {
         console.log(`Fetched ${event.loaded} of ${event.total}`);
@@ -481,6 +485,6 @@ fetchPacks();
 // Start loading the wasm module
 const mtModuleScript = document.createElement("script");
 mtModuleScript.type = "text/javascript";
-mtModuleScript.src = "minetest.js";
+mtModuleScript.src = RELEASE_DIR + "/minetest.js";
 mtModuleScript.async = true;
 document.body.appendChild(mtModuleScript);
