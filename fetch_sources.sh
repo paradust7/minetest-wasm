@@ -26,4 +26,4 @@ getrepo libjpeg "https://github.com/libjpeg-turbo/libjpeg-turbo.git" 2ee7264d409
 getrepo libpng "https://git.code.sf.net/p/libpng/code" a37d4836519517bdce6cb9d956092321eca3e73b
 getrepo freetype "https://gitlab.freedesktop.org/freetype/freetype.git" a8e4563c3418ed74d39019a6c5e2122d12c8f56f
 getrepo zstd "https://github.com/facebook/zstd.git" e47e674cd09583ff0503f0f6defd6d23d8b718d3
-getrepo webshims "https://github.com/paradust7/webshims.git" 01b29b520fa2c97f9c8f79b4bfd5ae67ecba6e06
+getrepo webshims "https://github.com/paradust7/webshims.git" 93a1dac25940648f3a3648061812f356f90b2cb0

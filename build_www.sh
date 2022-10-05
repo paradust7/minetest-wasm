@@ -8,6 +8,9 @@ SEEDFILE="/tmp/minetest_build_uuid_seed"
 dd status=none if=/dev/urandom bs=64 count=1 > "$SEEDFILE"
 md5sum -b "$SEEDFILE" > "$SEEDFILE".hash
 RELEASE_UUID=`cut -b -12 "$SEEDFILE".hash`
+# Clean up temp files
+rm "$SEEDFILE" "$SEEDFILE".hash
+
 
 RELEASE_DIR="$WWW_DIR/$RELEASE_UUID"
 PACKS_DIR="$RELEASE_DIR/packs"
