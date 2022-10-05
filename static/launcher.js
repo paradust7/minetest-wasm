@@ -4,7 +4,7 @@ const PACKS_DIR = RELEASE_DIR + '/packs';
 
 const rtCSS = `
 body {
-  font-family: arial;
+  font-family: Calibri, arial, sans-serif;
   margin: 0;
   padding: none;
   background-color: black;
@@ -30,14 +30,53 @@ canvas.emscripten {
 }
 
 #progress {
-  height: 20px;
+  height: 45px;
   width: 300px;
 }
 
 #controls {
   display: inline-block;
   vertical-align: top;
-	height: 25px;
+  height: 25px;
+}
+
+#controls > *:first-child {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+
+#controls > *:last-child {
+  border-right-width: 1px;
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+select, input {
+  height: 22px;
+  padding: 1px 5px 1px 5px;
+  margin: 1px 0;
+  font-family: Calibri, sans-serif, sans;
+  font-weight: 600;
+  outline: 0;
+  cursor: pointer;
+  border: 1px solid;
+  border-radius: 6px;
+  color: #c9d1d9;
+  background-color: #21262d;
+  border-color: rgba(240,246,252,0.1);
+  box-shadow: rgba(27, 31, 35, 0.04) 0px 1px 0px 0px, rgba(255, 255, 255, 0.25) 0px 1px 0px 0px inset;
+  transition: 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+  transition-property: color, background-color, border-color;
+  position: relative;
+  display: inline-block;
+  float: left;
+  border-radius: 0;
+}
+
+select:hover, input:hover {
+  background-color: #30363d;
+  border-color: #8b949e;
+  transition-duration: 0.1s;
 }
 
 #output {
@@ -62,6 +101,7 @@ canvas.emscripten {
     height: 120px;
     z-index: 10;
     font-size: 20pt;
+    border-radius: 6px;
 }
 `;
 
@@ -70,14 +110,11 @@ const rtHTML = `
 
   <div class="emscripten">
     <span id="controls">
-      <span>
         <select id="resolution" onchange="fixGeometry()">
           <option value="high">High Res</option>
           <option value="medium">Medium</option>
           <option value="low">Low Res</option>
         </select>
-      </span>
-      <span>
         <select id="aspectRatio" onchange="fixGeometry()">
           <option value="any">Fit Screen</option>
           <option value="4:3">4:3</option>
@@ -87,11 +124,10 @@ const rtHTML = `
           <option value="32:9">32:9</option>
           <option value="1:1">1:1</option>
         </select>
-      </span>
-      <!-- <span><input type="button" value="Toggle Fullscreen" onclick="fullscreen_button()"></span> -->
-      <span><input id="console_button" type="button" value="Show Console" onclick="toggle_console()"></span>
-      <span>F11 Full Screen</span>
+      <!-- <input type="button" value="Toggle Fullscreen" onclick="fullscreen_button()"> -->
+<input id="console_button" type="button" value="Show Console" onclick="toggle_console()">
     </span>
+    <span>F11 Full Screen</span>
   </div>
 
   <div class="emscripten">
