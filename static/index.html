@@ -6,6 +6,57 @@
     <title>Minetest for the Web</title>
   </head>
   <body>
+    <div id="temporary_console" class="console"></div>
     <script type="text/javascript" src="%__RELEASE_UUID__%/launcher.js"></script>
+    <script type="text/javascript">
+      document.body.style.backgroundColor = 'black';
+      const tcon = document.getElementById('temporary_console');
+      tcon.style.color = 'white';
+      function tcon_print(prefix, line) {
+          if (prefix) {
+              for (child of tcon.childNodes) {
+                  if (child.innerText.startsWith(prefix)) {
+                      child.innerText = prefix + line;
+                      return;
+                  }
+              }
+          }
+          const p = document.createElement('pre');
+          p.innerText = prefix + line;
+          tcon.appendChild(p);
+      }
+      const args = MinetestArgs.fromQueryString(window.location.search);
+      tcon_print("", "Minetest Arguments: " + JSON.stringify(args.toArray(), null, '    '));
+      tcon_print("", "Data Packs: " + JSON.stringify(args.packs, null, '    '));
+
+      const mtl = new MinetestLauncher();
+      mtl.addPacks(args.packs);
+      mtl.onprint = (text) => {
+          tcon_print("", text);
+      };
+      mtl.onprogress = (name, progress) => {
+          const prefix = `Task ${name} : `;
+          const pct = `${Math.round(progress * 100)}%`;
+          tcon_print(prefix, pct);
+      };
+      mtl.onready = () => {
+          tcon_print("", "READY!");
+          const launchButton = document.createElement('button');
+          launchButton.style.width = '300px';
+          launchButton.style.height = '120px';
+          launchButton.style.fontSize = '20pt';
+          launchButton.innerText = 'Click to Launch';
+          launchButton.addEventListener('click', () => {
+              tcon.remove();
+              mtl.launch(args);
+          });
+          tcon.appendChild(launchButton);
+      };
+      mtl.onerror = (err) => {
+          tcon_print("", "**************** FATAL ERROR ******************");
+          tcon_print("", err);
+          tcon_print("", "***********************************************");
+      };
+    </script>
   </body>
 </html>

@@ -7,13 +7,13 @@ export BUILD_KIND="${BUILD_KIND:-release}"
 case $BUILD_KIND in
   debug)
     export MINETEST_BUILD_TYPE="Debug"
-    export COMMON_CFLAGS="-O0 -g -gsource-map --source-map-base=/dev/"
+    export COMMON_CFLAGS="-O0 -g -gsource-map"
     export COMMON_LDFLAGS="-sSAFE_HEAP=1 -sASSERTIONS=2 -sDEMANGLE_SUPPORT=1"
     export BUILD_SUFFIX="-debug"
     ;;
   profile)
     export MINETEST_BUILD_TYPE="Release"
-    export COMMON_CFLAGS="--profiling -O2 -g -gsource-map --source-map-base=/dev/"
+    export COMMON_CFLAGS="--profiling -O2 -g -gsource-map"
     export COMMON_LDFLAGS=""
     export BUILD_SUFFIX="-profile"
     ;;

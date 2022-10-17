@@ -27,9 +27,14 @@ EMSCRIPTEN_FILES="minetest.js minetest.wasm minetest.worker.js"
 for I in $EMSCRIPTEN_FILES; do
   cp "$I" "$RELEASE_DIR"
 done
+
+# Ideally this would be in RELEASE_DIR, but the way this file
+# is located (see emcc --source-map-base) apparently cannot be
+# relative to the .wasm file.
 if [ -f minetest.wasm.map ]; then
-  cp minetest.wasm.map "$RELEASE_DIR"
+  cp minetest.wasm.map "$WWW_DIR"
 fi
+
 popd
 
 apply_substitutions() {
@@ -54,5 +59,5 @@ echo "DONE"
 # Optional script to customize deployment
 # Use this to add extra data packs, deploy to webserver, etc
 if [ -f deploy.sh ]; then
-  ./deploy.sh
+  ./deploy.sh "$RELEASE_UUID"
 fi

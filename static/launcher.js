@@ -1,3 +1,5 @@
+'use strict';
+
 // These are relative paths
 const RELEASE_DIR = '%__RELEASE_UUID__%'; // set by build_www.sh
 const PACKS_DIR = RELEASE_DIR + '/packs';
@@ -29,20 +31,14 @@ canvas.emscripten {
   background-color: black;
 }
 
-#progress {
-  height: 20px;
-  width: 300px;
-}
-
 #controls {
   display: inline-block;
   vertical-align: top;
 	height: 25px;
 }
 
-#output {
+.console {
   width: 100%;
-  height: 200px;
   margin: 0 auto;
   margin-top: 0px;
   border-left: 0px;
@@ -54,14 +50,6 @@ canvas.emscripten {
   color: white;
   font-family: 'Lucida Console', Monaco, monospace;
   outline: none;
-}
-
-.launchbutton {
-    position: absolute;
-    width: 300px;
-    height: 120px;
-    z-index: 10;
-    font-size: 20pt;
 }
 `;
 
@@ -88,88 +76,167 @@ const rtHTML = `
           <option value="1:1">1:1</option>
         </select>
       </span>
-      <!-- <span><input type="button" value="Toggle Fullscreen" onclick="fullscreen_button()"></span> -->
-      <span><input id="console_button" type="button" value="Show Console" onclick="toggle_console()"></span>
-      <span>F11 Full Screen</span>
+      <span><input id="console_button" type="button" value="Show Console" onclick="consoleToggle()"></span>
+      <span>(full screen: try F11 or Command+Shift+F)</span>
     </span>
   </div>
 
-  <div class="emscripten">
-    <progress value="0" max="100" id="progress" hidden=1></progress>
   </div>
 
-  </div>
-
-  <div class="emscripten">
-    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" onclick="doLaunch()" tabindex=-1 width="1024" height="600">
-    </canvas>
+  <div class="emscripten" id="canvas_container">
   </div>
 
   <div id="footer">
-    <textarea id="output" rows="8" style="display: none;"></textarea>
+    <textarea id="console_output" class="console" rows="8" style="display: none; height: 200px"></textarea>
   </div>
 `;
 
-const extraCSS = document.createElement("style");
-extraCSS.innerText = rtCSS;
-document.head.appendChild(extraCSS);
-document.body.innerHTML = rtHTML;
+// The canvas needs to be created before the wasm module is loaded.
+// It is not attached to the document until activateBody()
+const mtCanvas = document.createElement('canvas');
+mtCanvas.className = "emscripten";
+mtCanvas.id = "canvas";
+mtCanvas.oncontextmenu = (event) => {
+  event.preventDefault();
+};
+mtCanvas.tabIndex = "-1";
+mtCanvas.width = 1024;
+mtCanvas.height = 600;
 
-var progressElement = document.getElementById('progress');
+var consoleButton;
+var consoleOutput;
 
-function toggle_console() {
-    var button = document.getElementById('console_button');
-    var element = document.getElementById('output');
-    element.style.display = (element.style.display == 'block') ? 'none' : 'block';
-    button.value = (element.style.display == 'none') ? 'Show Console' : 'Hide Console';
-    fixGeometry();
+function activateBody() {
+    const extraCSS = document.createElement("style");
+    extraCSS.innerText = rtCSS;
+    document.head.appendChild(extraCSS);
+
+    // Replace the entire body
+    document.body.style = '';
+    document.body.className = '';
+    document.body.innerHTML = '';
+
+    const mtContainer = document.createElement('div');
+    mtContainer.innerHTML = rtHTML;
+    document.body.appendChild(mtContainer);
+
+    const canvasContainer = document.getElementById('canvas_container');
+    canvasContainer.appendChild(mtCanvas);
+
+    setupResizeHandlers();
+
+    consoleButton = document.getElementById('console_button');
+    consoleOutput = document.getElementById('console_output');
+    // Triggers the first and all future updates
+    consoleUpdate();
 }
 
-var consoleElement = document.getElementById('output');
-var enableTracing = false;
-var consoleText = [];
-var consoleLengthMax = 1000;
-var consoleTextLast = 0;
-var wasmReady = false;
-var invokedMain = false;
-var packsReady = false;
-var packs = [];
+// Singleton
+var mtLauncher = null;
 
-// Called by MainLoop when the wasm module is ready
+class LaunchScheduler {
+    constructor() {
+        this.conditions = new Map();
+        window.requestAnimationFrame(this.invokeCallbacks.bind(this));
+    }
+
+    isSet(name) {
+        return this.conditions.get(name)[0];
+    }
+
+    addCondition(name, startCallback = null, deps = []) {
+        this.conditions.set(name, [false, new Set(), startCallback]);
+        for (const depname of deps) {
+            this.addDep(name, depname);
+        }
+    }
+
+    addDep(name, depname) {
+        if (!this.isSet(depname)) {
+            this.conditions.get(name)[1].add(depname);
+        }
+    }
+
+    setCondition(name) {
+        if (this.isSet(name)) {
+            throw new Error('Scheduler condition set twice');
+        }
+        this.conditions.get(name)[0] = true;
+        this.conditions.forEach(v => {
+            v[1].delete(name);
+        });
+        window.requestAnimationFrame(this.invokeCallbacks.bind(this));
+    }
+
+    clearCondition(name, newCallback = null, deps = []) {
+        if (!this.isSet(name)) {
+            throw new Error('clearCondition called on unset condition');
+        }
+        const arr = this.conditions.get(name);
+        arr[0] = false;
+        arr[1] = new Set(deps);
+        arr[2] = newCallback;
+    }
+
+    invokeCallbacks() {
+        const callbacks = [];
+        this.conditions.forEach(v => {
+            if (!v[0] && v[1].size == 0 && v[2] !== null) {
+                callbacks.push(v[2]);
+                v[2] = null;
+            }
+        });
+        callbacks.forEach(cb => cb());
+    }
+}
+const mtScheduler = new LaunchScheduler();
+
+function loadWasm() {
+    // Start loading the wasm module
+    const mtModuleScript = document.createElement("script");
+    mtModuleScript.type = "text/javascript";
+    mtModuleScript.src = RELEASE_DIR + "/minetest.js";
+    mtModuleScript.async = true;
+    document.head.appendChild(mtModuleScript);
+}
+
+function callMain() {
+    const fullargs = [ './minetest', ...mtLauncher.args.toArray() ];
+    const [argc, argv] = makeArgv(fullargs);
+    emloop_invoke_main(argc, argv);
+    // Pausing and unpausing here gives the browser time to redraw the DOM
+    // before Minetest freezes the main thread generating the world. If this
+    // is not done, the page will stay frozen for several seconds
+    emloop_request_animation_frame();
+    mtScheduler.setCondition("main_called");
+}
+
+var emloop_pause;
+var emloop_unpause;
+var emloop_init_sound;
+var emloop_invoke_main;
+var emloop_install_pack;
+var irrlicht_want_pointerlock;
+var irrlicht_force_pointerlock;
+var irrlicht_resize;
+
+// Called when the wasm module is ready
 function emloop_ready() {
-    wasmReady = true;
+    emloop_pause = cwrap("emloop_pause", null, []);
+    emloop_unpause = cwrap("emloop_unpause", null, []);
+    emloop_init_sound = cwrap("emloop_init_sound", null, []);
     emloop_invoke_main = cwrap("emloop_invoke_main", null, ["number", "number"]);
     emloop_install_pack = cwrap("emloop_install_pack", null, ["number", "number", "number"]);
     irrlicht_want_pointerlock = cwrap("irrlicht_want_pointerlock", "number");
+    irrlicht_force_pointerlock = cwrap("irrlicht_force_pointerlock", null);
     irrlicht_resize = cwrap("irrlicht_resize", null, ["number", "number"]);
-    maybeStart();
+    mtScheduler.setCondition("wasmReady");
 }
 
-function all_packs_ready() {
-    packsReady = true;
-    maybeStart();
-}
-
-function maybeStart() {
-    if (!wasmReady || !packsReady) return;
-    if (packs.length > 0) {
-        for (const [name, data] of packs) {
-            installPack(name, data);
-        }
-        packs = [];
-    }
-    showLaunchButton();
-}
-
-var launchButton;
-function showLaunchButton() {
-    if (launchButton) return;
-    launchButton = document.createElement('button');
-    launchButton.className = 'launchbutton';
-    launchButton.innerText = 'Click to Launch';
-    launchButton.addEventListener('click', doLaunch);
-    document.body.appendChild(launchButton);
-    fixGeometry();
+// Called when the wasm module wants to force redraw before next frame
+function emloop_request_animation_frame() {
+    emloop_pause();
+    window.requestAnimationFrame(() => { emloop_unpause(); });
 }
 
 function makeArgv(args) {
@@ -183,173 +250,87 @@ function makeArgv(args) {
     return [i, argv];
 }
 
-function fetchPacks() {
-    const params = new URLSearchParams(window.location.search);
-    fetchPack('base');
-    if (params.has('gameid')) {
-        const gameid = params.get('gameid');
-        if (gameid != 'minetest_game' && gameid != 'devtest') {
-            fetchPack(params.get('gameid'));
-        }
-    }
-}
-
-var pendingPacks = 0;
-function fetchPack(name) {
-    pendingPacks += 1;
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', PACKS_DIR + '/' + name + '.pack', true);
-    xhr.responseType = 'arraybuffer';
-    xhr.onprogress = (event) => {
-        console.log(`Fetched ${event.loaded} of ${event.total}`);
-    };
-    xhr.onload = (event) => {
-        if (xhr.status == 200 || xhr.status == 304 || xhr.status == 206 || (xhr.status == 0 && xhr.response)) {
-            packs.push([name, xhr.response]);
-            pendingPacks -= 1;
-            if (pendingPacks == 0) {
-                all_packs_ready();
-            }
-        } else {
-            throw new Error(xhr.statusText + " : " + xhr.responseURL);
-        }
-    };
-    xhr.send(null);
-}
-
-function installPack(name, arrayBuffer) {
-    const arr = new Uint8Array(arrayBuffer);
-    const data = _malloc(arr.length * arr.BYTES_PER_ELEMENT);
-    HEAP8.set(arr, data);
-    emloop_install_pack(allocateUTF8(name), data, arr.length);
-    _free(data);
-}
-
-function parseQueryArgs() {
-    const args = ['./minetest'];
-    const params = new URLSearchParams(window.location.search);
-    const keyList0 = ['go', 'server'];
-    const keyList1 = ['name', 'gameid', 'address', 'address', 'port'];
-    for (const key of keyList0) {
-        if (params.has(key)) {
-            args.push('--' + key);
-        }
-    }
-    for (const key of keyList1) {
-        if (params.has(key)) {
-            args.push('--' + key);
-            args.push(params.get(key));
-        }
-    }
-    return args;
-}
-
-function doLaunch() {
-    if (launchButton) {
-        launchButton.remove();
-        launchButton = null;
-    }
-
-    if (!invokedMain && wasmReady) {
-        invokedMain = true;
-        const args = parseQueryArgs();
-        const [argc, argv] = makeArgv(args);
-        emloop_invoke_main(argc, argv);
-        // irrlicht initialization resets the width/height
-        fixGeometry();
-    }
-}
-
+var consoleText = [];
+var consoleLengthMax = 1000;
+var consoleTextLast = 0;
 var consoleDirty = false;
 function consoleUpdate() {
     if (consoleDirty) {
         if (consoleText.length > consoleLengthMax) {
             consoleText = consoleText.slice(-consoleLengthMax);
         }
-        consoleElement.value = consoleText.join('');
-        consoleElement.scrollTop = consoleElement.scrollHeight; // focus on bottom
+        consoleOutput.value = consoleText.join('');
+        consoleOutput.scrollTop = consoleOutput.scrollHeight; // focus on bottom
         consoleDirty = false;
     }
     window.requestAnimationFrame(consoleUpdate);
 }
-consoleUpdate();
+
+function consoleToggle() {
+    consoleOutput.style.display = (consoleOutput.style.display == 'block') ? 'none' : 'block';
+    consoleButton.value = (consoleOutput.style.display == 'none') ? 'Show Console' : 'Hide Console';
+    fixGeometry();
+}
+
+var enableTracing = false;
+function consolePrint(text) {
+    if (enableTracing) {
+        console.trace(text);
+    }
+    consoleText.push(text + "\n");
+    consoleDirty = true;
+    if (mtLauncher && mtLauncher.onprint) {
+        mtLauncher.onprint(text);
+    }
+}
 
 var Module = {
     preRun: [],
     postRun: [],
-    print: (function() {
-        return function(text) {
-            if (enableTracing) {
-                console.trace(text);
-            }
-            consoleText.push(text + "\n");
-            consoleDirty = true;
-          };
-    })(),
+    print: consolePrint,
     canvas: (function() {
-        var canvas = document.getElementById('canvas');
-
         // As a default initial behavior, pop up an alert when webgl context is lost. To make your
         // application robust, you may want to override this behavior before shipping!
         // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
-        canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+        mtCanvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
 
-        return canvas;
+        return mtCanvas;
     })(),
     setStatus: function(text) {
-        if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
-        if (text === Module.setStatus.last.text) return;
-        if (text) Module.print('[status] ' + text);
-
-        var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
-        var now = Date.now();
-        if (m && now - Module.setStatus.last.time < 30) return; // if this is a progress update, skip it if too soon
-        Module.setStatus.last.time = now;
-        Module.setStatus.last.text = text;
-        if (m) {
-          text = m[1];
-          progressElement.value = parseInt(m[2])*100;
-          progressElement.max = parseInt(m[4])*100;
-          progressElement.hidden = false;
-        } else {
-          progressElement.value = null;
-          progressElement.max = null;
-          progressElement.hidden = true;
-        }
+        if (text) Module.print('[wasm module status] ' + text);
     },
     totalDependencies: 0,
     monitorRunDependencies: function(left) {
         this.totalDependencies = Math.max(this.totalDependencies, left);
-        Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+        if (!mtLauncher || !mtLauncher.onprogress) return;
+        mtLauncher.onprogress('wasm_module', (this.totalDependencies-left) / this.totalDependencies);
     }
 };
 
 Module['printErr'] = Module['print'];
-Module['onFullScreen'] = () => { fixGeometry(); };
-Module.setStatus('Downloading...');
-window.onerror = function(event) {
-    // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
-    Module.print('Exception thrown, see JavaScript console');
-    Module.setStatus = function(text) {
-        if (text) Module.print('[status] ' + text);
-    };
-};
-var pointerlock_pending = false;
-var emloop_invoke_main;
-var irrlicht_want_pointerlock;
-var irrlicht_resize;
 
-function fullscreen_button() {
-    var canvas = document.getElementById('canvas');
-    if (wasmReady) {
-        var alsoLockPointer = irrlicht_want_pointerlock();
-        // This calls Module['onFullScreen'] when finished, which calls fixGeometry.
-        Module.requestFullscreen(alsoLockPointer, false);
-    }
-}
+// This is injected into workers so that out/err are sent to the main thread.
+// This probably should be the default behavior, but doesn't seem to be for WasmFS.
+const workerInject = `
+  Module['print'] = (text) => {
+    postMessage({cmd: 'print', text: text, threadId: Module['_pthread_self']()});
+  };
+  Module['printErr'] = (text) => {
+    postMessage({cmd: 'printErr', text: text, threadId: Module['_pthread_self']()});
+  };
+  importScripts('minetest.js');
+`;
+Module['mainScriptUrlOrBlob'] = new Blob([workerInject], { type: "text/javascript" });
+
+
+
+Module['onFullScreen'] = () => { fixGeometry(); };
+window.onerror = function(event) {
+    consolePrint('Exception thrown, see JavaScript console');
+};
 
 function resizeCanvas(width, height) {
-    var canvas = document.getElementById('canvas');
+    const canvas = mtCanvas;
     if (canvas.width != width || canvas.height != height) {
         canvas.width = width;
         canvas.height = height;
@@ -357,14 +338,9 @@ function resizeCanvas(width, height) {
         canvas.heightNative = height;
     }
     // Trigger SDL window resize.
-    // This should happen automatically, it's disappointing that it doesn't.
-    if (wasmReady) {
-        irrlicht_resize(width, height);
-    }
+    // This should happen automatically, not sure why it doesn't.
+    irrlicht_resize(width, height);
 }
-
-var resolutionSelect = document.getElementById('resolution');
-var aspectRatioSelect = document.getElementById('aspectRatio');
 
 function now() {
     return (new Date()).getTime();
@@ -377,8 +353,9 @@ function fixGeometry(override) {
     if (!override && now() < fixGeometryPause) {
         return;
     }
-
-    var canvas = document.getElementById('canvas');
+    const resolutionSelect = document.getElementById('resolution');
+    const aspectRatioSelect = document.getElementById('aspectRatio');
+    var canvas = mtCanvas;
     var resolution = resolutionSelect.value;
     var aspectRatio = aspectRatioSelect.value;
     var screenX;
@@ -449,42 +426,229 @@ function fixGeometry(override) {
         canvas.style.removeProperty("width");
         canvas.style.removeProperty("height");
     }
+}
 
-    if (launchButton) {
-        var canvasRect = canvas.getBoundingClientRect();
-        var midX = Math.floor((canvasRect.top + canvasRect.bottom) / 2);
-        var midY = Math.floor((canvasRect.left + canvasRect.right) / 2);
-        launchButton.style.left = (midY - 300/2) + 'px';
-        launchButton.style.top = (midX - 120/2) + 'px';
+function setupResizeHandlers() {
+    window.addEventListener('resize', () => { fixGeometry(); });
+
+    // Needed to prevent special keys from triggering browser actions, like
+    // F5 causing page reload.
+    document.addEventListener('keydown', (e) => {
+        // Allow F11 to go full screen
+        if (e.code == "F11") {
+            // On Firefox, F11 is animated. The window smoothly grows to
+            // full screen over several seconds. During this transition, the 'resize'
+            // event is triggered hundreds of times. To prevent flickering, have
+            // fixGeometry ignore repeated calls, and instead resize every 500ms
+            // for 2.5 seconds. By then it should be finished.
+            fixGeometryPause = now() + 2000;
+            for (var delay = 100; delay <= 2600; delay += 500) {
+                setTimeout(() => { fixGeometry(true); }, delay);
+            }
+        }
+    });
+}
+
+class MinetestArgs {
+    constructor() {
+        this.go = false;
+        this.server = false;
+        this.name = '';
+        this.password = '';
+        this.gameid = '';
+        this.address = '';
+        this.port = '';
+        this.packs = [];
+        this.extra = [];
+    }
+
+    toArray() {
+        const args = [];
+        if (this.go) args.push('--go');
+        if (this.server) args.push('--server');
+        if (this.name) args.push('--name', this.name);
+        if (this.password) args.push('--password', this.password);
+        if (this.gameid) args.push('--gameid', this.gameid);
+        if (this.address) args.push('--address', this.address);
+        if (this.port) args.push('--port', this.port);
+        args.push(...this.extra);
+        return args;
+    }
+
+    toQueryString() {
+        const params = new URLSearchParams();
+        if (this.go) params.append('go', '');
+        if (this.server) params.append('server', '');
+        if (this.name) params.append('name', this.name);
+        if (this.password) params.append('password', this.password);
+        if (this.gameid) params.append('gameid', this.gameid);
+        if (this.address) params.append('address', this.address);
+        if (this.port) params.append('port', this.port);
+        const extra_packs = [];
+        this.packs.forEach(v => {
+            if (v != 'base' && v != 'minetest_game' && v != 'devtest' && v != this.gameid) {
+                extra_packs.push(v);
+            }
+        });
+        if (extra_packs.length) {
+            params.append('packs', extra_packs.join(','));
+        }
+        if (this.extra.length) {
+            params.append('extra', this.extra.join(','));
+        }
+        return params.toString();
+    }
+
+    static fromQueryString(qs) {
+        const r = new MinetestArgs();
+        const params = new URLSearchParams(qs);
+        if (params.has('go')) r.go = true;
+        if (params.has('server')) r.server = true;
+        if (params.has('name')) r.name = params.get('name');
+        if (params.has('password')) r.password = params.get('password');
+        if (params.has('gameid')) r.gameid = params.get('gameid');
+        if (params.has('address')) r.address = params.get('address');
+        if (params.has('port')) r.port = params.get('port');
+        if (r.gameid && r.gameid != 'minetest_game' && r.gameid != 'devtest' && r.gameid != 'base') {
+            r.packs.push(r.gameid);
+        }
+        if (params.has('packs')) {
+            params.get('packs').split(',').forEach(p => {
+                if (!r.packs.includes(p)) {
+                    r.packs.push(p);
+                }
+            });
+        }
+        if (params.has('extra')) {
+            r.extra = params.get('extra').split(',');
+        }
+        return r;
     }
 }
 
-window.addEventListener('load', () => { fixGeometry(); });
-window.addEventListener('resize', () => { fixGeometry(); });
+class MinetestLauncher {
+    constructor() {
+        if (mtLauncher !== null) {
+            throw new Error("There can be only one launcher");
+        }
+        mtLauncher = this;
+        this.args = null;
+        this.onprogress = null; // function(name, percent done)
+        this.onready = null; // function()
+        this.onerror = null; // function(message)
+        this.onprint = null; // function(text)
+        this.addedPacks = new Set();
 
-// Needed to prevent special keys from triggering browser actions, like
-// F5 causing page reload.
-document.addEventListener('keydown', (e) => {
-    // Allow F11 to go full screen
-    if (e.code == "F11") {
-        // On Firefox, F11 is animated. The window smoothly grows to
-        // full screen over several seconds. During this transition, the 'resize'
-        // event is triggered hundreds of times. To prevent flickering, have
-        // fixGeometry ignore repeated calls, and instead resize every 500ms
-        // for 2.5 seconds. By then it should be finished.
-        fixGeometryPause = now() + 2000;
-        for (var delay = 100; delay <= 2600; delay += 500) {
-            setTimeout(() => { fixGeometry(true); }, delay);
+        mtScheduler.addCondition("wasmReady", loadWasm);
+        mtScheduler.addCondition("launch_called");
+        mtScheduler.addCondition("ready", this.#notifyReady.bind(this), ['wasmReady']);
+        mtScheduler.addCondition("main_called", callMain, ['ready', 'launch_called']);
+        this.addPack('base');
+    }
+
+    #notifyReady() {
+        mtScheduler.setCondition("ready");
+        if (this.onready) this.onready();
+    }
+
+    isReady() {
+        return mtScheduler.isSet("ready");
+    }
+
+    // Returns pack status:
+    //   0 - pack has not been added
+    //   1 - pack is downloading
+    //   2 - pack has been installed
+    checkPack(name) {
+       if (!this.addedPacks.has(name)) {
+           return 0;
+       }
+       if (mtScheduler.isSet("installed:" + name)) {
+           return 2;
+       }
+       return 1;
+    }
+
+    addPacks(packs) {
+        for (const pack of packs) {
+            this.addPack(pack);
         }
     }
-});
 
-// Start fetching data packs
-fetchPacks();
+    addPack(name) {
+        if (mtScheduler.isSet("launch_called")) {
+            throw new Error("Cannot add packs after launch");
+        }
+        if (name == 'minetest_game' || name == 'devtest' || this.addedPacks.has(name))
+            return;
+        this.addedPacks.add(name);
+        const xhr = new XMLHttpRequest();
+        const fetchedCond = "fetched:" + name;
+        const installedCond = "installed:" + name;
+        const installPack = () => {
+            const arr = new Uint8Array(xhr.response);
+            const data = _malloc(arr.length * arr.BYTES_PER_ELEMENT);
+            HEAP8.set(arr, data);
+            emloop_install_pack(allocateUTF8(name), data, arr.length);
+            _free(data);
+            mtScheduler.setCondition(installedCond);
+            if (this.onprogress) {
+                this.onprogress(`download:${name}`, 1.0);
+                this.onprogress(`install:${name}`, 1.0);
+            }
+        };
+        mtScheduler.addCondition(fetchedCond, null);
+        mtScheduler.addCondition(installedCond, installPack, ["wasmReady", fetchedCond]);
+        mtScheduler.addDep("main_called", installedCond);
 
-// Start loading the wasm module
-const mtModuleScript = document.createElement("script");
-mtModuleScript.type = "text/javascript";
-mtModuleScript.src = RELEASE_DIR + "/minetest.js";
-mtModuleScript.async = true;
-document.body.appendChild(mtModuleScript);
+        xhr.open('GET', PACKS_DIR + '/' + name + '.pack', true);
+        xhr.responseType = 'arraybuffer';
+        xhr.onprogress = (event) => {
+            if (this.onprogress) {
+                this.onprogress(`download:${name}`, event.loaded / event.total);
+            }
+        };
+        xhr.onload = (event) => {
+            if (xhr.status == 200 || xhr.status == 304 || xhr.status == 206 || (xhr.status == 0 && xhr.response)) {
+                mtScheduler.setCondition(fetchedCond);
+            } else {
+                const errmsg = xhr.statusText + " : " + xhr.responseURL;
+                if (this.onerror) {
+                    this.onerror(errmsg);
+                } else {
+                    throw new Error(errmsg);
+                }
+            }
+        };
+        xhr.send(null);
+    }
+
+    // Launch minetest.exe <args>
+    //
+    // This must be called from a keyboard or mouse event handler,
+    // after the 'onready' event has fired. (For this reason, it cannot
+    // be called from the `onready` handler)
+    launch(args) {
+        if (!this.isReady()) {
+            throw new Error("launch called before onready");
+        }
+        if (!(args instanceof MinetestArgs)) {
+            throw new Error("launch called without MinetestArgs");
+        }
+        if (mtScheduler.isSet("launch_called")) {
+            throw new Error("launch called twice");
+        }
+        this.args = args;
+        if (this.args.gameid) {
+            this.addPack(this.args.gameid);
+        }
+        this.addPacks(this.args.packs);
+        activateBody();
+        fixGeometry();
+        emloop_init_sound();
+        if (args.go) {
+            irrlicht_force_pointerlock();
+        }
+        mtScheduler.setCondition("launch_called");
+    }
+}
