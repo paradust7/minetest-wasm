@@ -58,7 +58,7 @@ if ! $INCREMENTAL; then
       -DCURL_LIBRARY="$INSTALL_DIR/lib/libcurl.a" \
       -DCURL_INCLUDE_DIR="$INSTALL_DIR/include" \
       -G "Unix Makefiles" \
-      "$BASE_DIR/minetest"
+      "$SOURCES_DIR/minetest"
 fi
 
 emmake make

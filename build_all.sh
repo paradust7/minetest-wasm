@@ -26,7 +26,6 @@ emcc --clear-cache --clear-ports
 ./build_curl.sh      # uses webshims, openssl, zlib
 
 # Minetest
-./pull_minetest.sh
 ./build_fsroot.sh
 ./build_minetest.sh
 

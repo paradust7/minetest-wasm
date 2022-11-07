@@ -193,6 +193,8 @@ const mtScheduler = new LaunchScheduler();
 
 function loadWasm() {
     // Start loading the wasm module
+    // The module will call emloop_ready when it is loaded
+    // and waiting for main() arguments.
     const mtModuleScript = document.createElement("script");
     mtModuleScript.type = "text/javascript";
     mtModuleScript.src = RELEASE_DIR + "/minetest.js";
@@ -219,6 +221,9 @@ var emloop_install_pack;
 var irrlicht_want_pointerlock;
 var irrlicht_force_pointerlock;
 var irrlicht_resize;
+var emsocket_init;
+var emsocket_set_proxy;
+var emsocket_set_vpn;
 
 // Called when the wasm module is ready
 function emloop_ready() {
@@ -230,6 +235,9 @@ function emloop_ready() {
     irrlicht_want_pointerlock = cwrap("irrlicht_want_pointerlock", "number");
     irrlicht_force_pointerlock = cwrap("irrlicht_force_pointerlock", null);
     irrlicht_resize = cwrap("irrlicht_resize", null, ["number", "number"]);
+    emsocket_init = cwrap("emsocket_init", null, []);
+    emsocket_set_proxy = cwrap("emsocket_set_proxy", null, ["number"]);
+    emsocket_set_vpn = cwrap("emsocket_set_vpn", null, ["number"]);
     mtScheduler.setCondition("wasmReady");
 }
 
@@ -538,12 +546,20 @@ class MinetestLauncher {
         this.onerror = null; // function(message)
         this.onprint = null; // function(text)
         this.addedPacks = new Set();
+        this.vpn = null;
+        this.serverCode = null;
+        this.clientCode = null;
+        this.proxyUrl = "wss://minetest.dustlabs.io/proxy";
 
         mtScheduler.addCondition("wasmReady", loadWasm);
         mtScheduler.addCondition("launch_called");
         mtScheduler.addCondition("ready", this.#notifyReady.bind(this), ['wasmReady']);
         mtScheduler.addCondition("main_called", callMain, ['ready', 'launch_called']);
         this.addPack('base');
+    }
+
+    setProxy(url) {
+        this.proxyUrl = url;
     }
 
     #notifyReady() {
@@ -553,6 +569,13 @@ class MinetestLauncher {
 
     isReady() {
         return mtScheduler.isSet("ready");
+    }
+
+    // Must be set before launch()
+    setVPN(serverCode, clientCode) {
+        this.serverCode = serverCode;
+        this.clientCode = clientCode;
+        this.vpn = serverCode ? serverCode : clientCode;
     }
 
     // Returns pack status:
@@ -646,6 +669,17 @@ class MinetestLauncher {
         activateBody();
         fixGeometry();
         emloop_init_sound();
+        // Setup emsocket
+        // TODO: emsocket should export the helpers for this
+        emsocket_init();
+        const proxyBuf = allocateUTF8(this.proxyUrl);
+        emsocket_set_proxy(proxyBuf);
+        _free(proxyBuf);
+        if (this.vpn) {
+            const vpnBuf = allocateUTF8(this.vpn);
+            emsocket_set_vpn(vpnBuf);
+            _free(vpnBuf);
+        }
         if (args.go) {
             irrlicht_force_pointerlock();
         }

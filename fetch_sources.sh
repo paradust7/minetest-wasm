@@ -26,4 +26,14 @@ getrepo libjpeg "https://github.com/libjpeg-turbo/libjpeg-turbo.git" 2ee7264d409
 getrepo libpng "https://git.code.sf.net/p/libpng/code" a37d4836519517bdce6cb9d956092321eca3e73b
 getrepo freetype "https://gitlab.freedesktop.org/freetype/freetype.git" a8e4563c3418ed74d39019a6c5e2122d12c8f56f
 getrepo zstd "https://github.com/facebook/zstd.git" e47e674cd09583ff0503f0f6defd6d23d8b718d3
-getrepo webshims "https://github.com/paradust7/webshims.git" 93a1dac25940648f3a3648061812f356f90b2cb0
+
+# These repos are part of the fork
+getrepo webshims "https://github.com/paradust7/webshims.git" 91c3fe85d2cb7f85cc8e19d3f53dc8f252a69ff7
+getrepo minetest "https://github.com/paradust7/minetest.git" 08c43ff4602810269a204bcae1cdd72005b82f22
+getrepo irrlichtmt "https://github.com/paradust7/irrlicht.git" d1dae521fb75d2140e3db20a4562f907cdb77971
+
+# Make irrlichtmt symlink
+pushd "$SOURCES_DIR"/minetest/lib
+rm -f irrlichtmt
+ln -s ../../irrlichtmt irrlichtmt
+popd
