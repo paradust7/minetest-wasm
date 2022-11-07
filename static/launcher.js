@@ -2,7 +2,7 @@
 
 // These are relative paths
 const RELEASE_DIR = '%__RELEASE_UUID__%'; // set by build_www.sh
-const PACKS_DIR = RELEASE_DIR + '/packs';
+const DEFAULT_PACKS_DIR = RELEASE_DIR + '/packs';
 
 const rtCSS = `
 body {
@@ -79,6 +79,9 @@ const rtHTML = `
       <span><input id="console_button" type="button" value="Show Console" onclick="consoleToggle()"></span>
       <span>(full screen: try F11 or Command+Shift+F)</span>
     </span>
+    <div id="progressbar_div" style="display: none">
+      <progress id="progressbar" value="0" max="100">0%</progress>
+    </div>
   </div>
 
   </div>
@@ -105,6 +108,8 @@ mtCanvas.height = 600;
 
 var consoleButton;
 var consoleOutput;
+var progressBar;
+var progressBarDiv;
 
 function activateBody() {
     const extraCSS = document.createElement("style");
@@ -129,6 +134,23 @@ function activateBody() {
     consoleOutput = document.getElementById('console_output');
     // Triggers the first and all future updates
     consoleUpdate();
+
+    progressBar = document.getElementById('progressbar');
+    progressBarDiv = document.getElementById('progressbar_div');
+    updateProgressBar(0, 0);
+}
+
+var PB_bytes_downloaded = 0;
+var PB_bytes_needed = 0;
+function updateProgressBar(doneBytes, neededBytes) {
+    PB_bytes_downloaded += doneBytes;
+    PB_bytes_needed += neededBytes;
+    if (progressBar) {
+        progressBarDiv.style.display = (PB_bytes_downloaded == PB_bytes_needed) ? "none" : "block";
+        const pct = PB_bytes_needed ? Math.round(100 * PB_bytes_downloaded / PB_bytes_needed) : 0;
+        progressBar.value = `${pct}`;
+        progressBar.innerText = `${pct}%`;
+    }
 }
 
 // Singleton
@@ -550,6 +572,8 @@ class MinetestLauncher {
         this.serverCode = null;
         this.clientCode = null;
         this.proxyUrl = "wss://minetest.dustlabs.io/proxy";
+        this.packsDir = DEFAULT_PACKS_DIR;
+        this.packsDirIsCors = false;
 
         mtScheduler.addCondition("wasmReady", loadWasm);
         mtScheduler.addCondition("launch_called");
@@ -560,6 +584,15 @@ class MinetestLauncher {
 
     setProxy(url) {
         this.proxyUrl = url;
+    }
+
+    /*
+     * Set the url for the pack files directory
+     * This can be relative or absolute.
+     */
+    setPacksDir(url, is_cors) {
+        this.packsDir = url;
+        this.packsDirIsCors = is_cors;
     }
 
     #notifyReady() {
@@ -598,21 +631,31 @@ class MinetestLauncher {
         }
     }
 
-    addPack(name) {
+    async addPack(name) {
         if (mtScheduler.isSet("launch_called")) {
             throw new Error("Cannot add packs after launch");
         }
         if (name == 'minetest_game' || name == 'devtest' || this.addedPacks.has(name))
             return;
         this.addedPacks.add(name);
-        const xhr = new XMLHttpRequest();
+
         const fetchedCond = "fetched:" + name;
         const installedCond = "installed:" + name;
+
+        let chunks = [];
+        let received = 0;
+        // This is done here instead of at the bottom, because it needs to
+        // be delayed until after the 'wasmReady' condition.
+        // TODO: Add the ability to `await` a condition instead.
         const installPack = () => {
-            const arr = new Uint8Array(xhr.response);
-            const data = _malloc(arr.length * arr.BYTES_PER_ELEMENT);
-            HEAP8.set(arr, data);
-            emloop_install_pack(allocateUTF8(name), data, arr.length);
+            // Install
+            const data = _malloc(received);
+            let offset = 0;
+            for (const arr of chunks) {
+                HEAPU8.set(arr, data + offset);
+                offset += arr.byteLength;
+            }
+            emloop_install_pack(allocateUTF8(name), data, received);
             _free(data);
             mtScheduler.setCondition(installedCond);
             if (this.onprogress) {
@@ -624,26 +667,40 @@ class MinetestLauncher {
         mtScheduler.addCondition(installedCond, installPack, ["wasmReady", fetchedCond]);
         mtScheduler.addDep("main_called", installedCond);
 
-        xhr.open('GET', PACKS_DIR + '/' + name + '.pack', true);
-        xhr.responseType = 'arraybuffer';
-        xhr.onprogress = (event) => {
-            if (this.onprogress) {
-                this.onprogress(`download:${name}`, event.loaded / event.total);
-            }
-        };
-        xhr.onload = (event) => {
-            if (xhr.status == 200 || xhr.status == 304 || xhr.status == 206 || (xhr.status == 0 && xhr.response)) {
-                mtScheduler.setCondition(fetchedCond);
+        const packUrl = this.packsDir + '/' + name + '.pack';
+        let resp;
+        try {
+            resp = await fetch(packUrl, this.packsDirIsCors ? { credentials: 'omit' } : {});
+        } catch (err) {
+            if (this.onerror) {
+                this.onerror(`${err}`);
             } else {
-                const errmsg = xhr.statusText + " : " + xhr.responseURL;
-                if (this.onerror) {
-                    this.onerror(errmsg);
-                } else {
-                    throw new Error(errmsg);
+                alert(`Error while loading ${packUrl}. Please refresh page`);
+            }
+            throw new Error(`${err}`);
+        }
+        // This could be null if the header is missing
+        var contentLength = resp.headers.get('Content-Length');
+        if (contentLength) {
+            contentLength = parseInt(contentLength);
+            updateProgressBar(0, contentLength);
+        }
+        let reader = resp.body.getReader();
+        while (true) {
+            const {done, value} = await reader.read();
+            if (done) {
+                break;
+            }
+            chunks.push(value);
+            received += value.byteLength;
+            if (contentLength) {
+                updateProgressBar(value.byteLength, 0);
+                if (this.onprogress) {
+                    this.onprogress(`download:${name}`, received / contentLength);
                 }
             }
-        };
-        xhr.send(null);
+        }
+        mtScheduler.setCondition(fetchedCond);
     }
 
     // Launch minetest.exe <args>
