@@ -16,7 +16,6 @@ getsource "https://downloads.xiph.org/releases/vorbis/libvorbis-1.3.7.tar.gz" 0e
 getsource "https://www.sqlite.org/src/tarball/698edb77/SQLite-698edb77.tar.gz" b1568dc5d17788b9dd9575ecd224b3f7985b51764bc2f34f4808d851332840ef
 getsource "https://www.openssl.org/source/openssl-1.1.1n.tar.gz" 40dceb51a4f6a5275bde0e6bf20ef4b91bfc32ed57c0552e2e8e15463372b17a
 getsource "https://curl.se/download/curl-7.82.0.tar.bz2" 46d9a0400a33408fd992770b04a44a7434b3036f2e8089ac28b57573d59d371f
-getsource "https://github.com/minetest/minetest/releases/download/5.5.1/minetest-5.5.1-win64.zip" 9be48fb4126312b0d8fd048d1ab06d59b3109f6fe037fcd5ab65b99507e68a5f
 getsource "https://www.libarchive.org/downloads/libarchive-3.6.1.tar.xz" 5a411aceb978f43e626f0c2d1812ddd8807b645ed892453acabd532376c148e6
 
 # These are never checked into the repo, since they are separate git repos.
@@ -26,6 +25,9 @@ getrepo libjpeg "https://github.com/libjpeg-turbo/libjpeg-turbo.git" 2ee7264d409
 getrepo libpng "https://git.code.sf.net/p/libpng/code" a37d4836519517bdce6cb9d956092321eca3e73b
 getrepo freetype "https://gitlab.freedesktop.org/freetype/freetype.git" a8e4563c3418ed74d39019a6c5e2122d12c8f56f
 getrepo zstd "https://github.com/facebook/zstd.git" e47e674cd09583ff0503f0f6defd6d23d8b718d3
+
+# Minetest Game
+getrepo minetest_game "https://github.com/minetest/minetest_game.git" 99a719309559b632af65756f380496aa269d4b4a
 
 # These repos are part of the fork
 getrepo webshims "https://github.com/paradust7/webshims.git" 91c3fe85d2cb7f85cc8e19d3f53dc8f252a69ff7

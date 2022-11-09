@@ -57,8 +57,10 @@ if ! $INCREMENTAL; then
       -DEGL_INCLUDE_DIR="$DUMMY_INCLUDE_DIR" \
       -DCURL_LIBRARY="$INSTALL_DIR/lib/libcurl.a" \
       -DCURL_INCLUDE_DIR="$INSTALL_DIR/include" \
+      -DCMAKE_INSTALL_PREFIX="$BUILD_DIR/minetest-install" \
       -G "Unix Makefiles" \
       "$SOURCES_DIR/minetest"
 fi
 
-emmake make
+rm -rf "$BUILD_DIR/minetest-install"
+emmake make install
