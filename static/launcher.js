@@ -240,6 +240,7 @@ var emloop_unpause;
 var emloop_init_sound;
 var emloop_invoke_main;
 var emloop_install_pack;
+var emloop_set_minetest_conf;
 var irrlicht_want_pointerlock;
 var irrlicht_force_pointerlock;
 var irrlicht_resize;
@@ -254,6 +255,7 @@ function emloop_ready() {
     emloop_init_sound = cwrap("emloop_init_sound", null, []);
     emloop_invoke_main = cwrap("emloop_invoke_main", null, ["number", "number"]);
     emloop_install_pack = cwrap("emloop_install_pack", null, ["number", "number", "number"]);
+    emloop_set_minetest_conf = cwrap("emloop_set_minetest_conf", null, ["number"]);
     irrlicht_want_pointerlock = cwrap("irrlicht_want_pointerlock", "number");
     irrlicht_force_pointerlock = cwrap("irrlicht_force_pointerlock", null);
     irrlicht_resize = cwrap("irrlicht_resize", null, ["number", "number"]);
@@ -274,9 +276,9 @@ function makeArgv(args) {
     const argv = _malloc((args.length + 1) * 4);
     let i;
     for (i = 0; i < args.length; i++) {
-        HEAPU32[(argv >> 2) + i] = allocateUTF8(args[i]);
+        HEAPU32[(argv >>> 2) + i] = allocateUTF8(args[i]);
     }
-    HEAPU32[(argv >> 2) + i] = 0; // argv[argc] == NULL
+    HEAPU32[(argv >>> 2) + i] = 0; // argv[argc] == NULL
     return [i, argv];
 }
 
@@ -500,7 +502,7 @@ class MinetestArgs {
         if (this.password) args.push('--password', this.password);
         if (this.gameid) args.push('--gameid', this.gameid);
         if (this.address) args.push('--address', this.address);
-        if (this.port) args.push('--port', this.port);
+        if (this.port) args.push('--port', this.port.toString());
         args.push(...this.extra);
         return args;
     }
@@ -513,7 +515,7 @@ class MinetestArgs {
         if (this.password) params.append('password', this.password);
         if (this.gameid) params.append('gameid', this.gameid);
         if (this.address) params.append('address', this.address);
-        if (this.port) params.append('port', this.port);
+        if (this.port) params.append('port', this.port.toString());
         const extra_packs = [];
         this.packs.forEach(v => {
             if (v != 'base' && v != 'minetest_game' && v != 'devtest' && v != this.gameid) {
@@ -538,7 +540,7 @@ class MinetestArgs {
         if (params.has('password')) r.password = params.get('password');
         if (params.has('gameid')) r.gameid = params.get('gameid');
         if (params.has('address')) r.address = params.get('address');
-        if (params.has('port')) r.port = params.get('port');
+        if (params.has('port')) r.port = parseInt(params.get('port'));
         if (r.gameid && r.gameid != 'minetest_game' && r.gameid != 'devtest' && r.gameid != 'base') {
             r.packs.push(r.gameid);
         }
@@ -574,6 +576,7 @@ class MinetestLauncher {
         this.proxyUrl = "wss://minetest.dustlabs.io/proxy";
         this.packsDir = DEFAULT_PACKS_DIR;
         this.packsDirIsCors = false;
+        this.minetestConf = null;
 
         mtScheduler.addCondition("wasmReady", loadWasm);
         mtScheduler.addCondition("launch_called");
@@ -609,6 +612,10 @@ class MinetestLauncher {
         this.serverCode = serverCode;
         this.clientCode = clientCode;
         this.vpn = serverCode ? serverCode : clientCode;
+    }
+
+    setMinetestConf(contents) {
+        this.minetestConf = contents;
     }
 
     // Returns pack status:
@@ -725,6 +732,11 @@ class MinetestLauncher {
         this.addPacks(this.args.packs);
         activateBody();
         fixGeometry();
+        if (this.minetestConf) {
+            const confBuf = allocateUTF8(this.minetestConf)
+            emloop_set_minetest_conf(confBuf);
+            _free(confBuf);
+        }
         emloop_init_sound();
         // Setup emsocket
         // TODO: emsocket should export the helpers for this
