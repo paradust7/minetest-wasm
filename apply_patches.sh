@@ -1,7 +1,13 @@
 #!/bin/bash -eu
 
-source common.sh
+BASE_DIR="$(dirname -- "$(readlink -f -- "$0")")"
 
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 /path/to/emsdk"
+    exit 1
+fi
+
+EMSDK_ROOT="$1"
 cd "$EMSDK_ROOT"
 
 patch -p1 < "$BASE_DIR/emsdk_emcc.patch"

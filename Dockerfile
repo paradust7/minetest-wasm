@@ -29,6 +29,6 @@ RUN \
 	   cd "$HOME"/emsdk \
 	&& . ./emsdk_env.sh \
 	&& cd /minetest-wasm \
-	&& ./apply_patches.sh \
 	&& ls -la \
+        && ./install_emsdk.sh \
 	&& ./build_all.sh

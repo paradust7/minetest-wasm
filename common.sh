@@ -4,6 +4,28 @@ cd "$BASE_DIR"
 # Debug / Release
 export BUILD_KIND="${BUILD_KIND:-release}"
 
+# Setup emscripten (if not already)
+export EMSDK="${EMSDK:-use_local_install}"
+if [ "$EMSDK" == "use_local_install" ]; then
+    if [ ! -d emsdk ]; then
+        set +x
+        echo "-------------------------------------------------------"
+        echo "Emscripten is not installed. (EMSDK not set)"
+        echo "Press ENTER to install it into emsdk/. Ctrl-C to abort."
+        echo "-------------------------------------------------------"
+        read unused_var
+        if [ "$unused_var" != "" ]; then
+            echo "Aborting"
+            exit 1
+        fi
+        set -x
+        ./install_emsdk.sh
+    fi
+    pushd emsdk
+    source ./emsdk_env.sh
+    popd
+fi
+
 case $BUILD_KIND in
   debug)
     export MINETEST_BUILD_TYPE="Debug"
@@ -40,7 +62,7 @@ export CFLAGS="$COMMON_CFLAGS -pthread -sUSE_PTHREADS=1 -fexceptions"
 export CXXFLAGS="$COMMON_CFLAGS -pthread -sUSE_PTHREADS=1 -fexceptions"
 export LDFLAGS="$COMMON_LDFLAGS -pthread -sUSE_PTHREADS=1 -fexceptions -sEXIT_RUNTIME"
 
-export EMSDK_ROOT="$HOME/emsdk"
+export EMSDK_ROOT="$EMSDK"
 export EMSDK_SYSLIB="${EMSDK_ROOT}/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten"
 export EMSDK_SYSINCLUDE="${EMSDK_ROOT}/upstream/emscripten/cache/sysroot/include"
 
