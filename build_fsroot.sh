@@ -28,6 +28,7 @@ echo "This is here to ensure bin exists" > bin/readme.txt
 cp -r "$IRRLICHT_REPO/media/Shaders" client/shaders/Irrlicht
 
 rm -rf games/minetest_game
+mkdir -p games
 cp -a "$SOURCES_DIR"/minetest_game games
 cd games/minetest_game
 rm -rf ".git" ".github"
