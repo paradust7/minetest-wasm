@@ -157,9 +157,12 @@ function getrepo() {
 
   pushd "$SOURCES_DIR"
   if [ ! -d "$dirname" ]; then
-    git clone "$url" "$dirname"
+    mkdir "$dirname"
     pushd "$dirname"
-    git checkout "$rev"
+    git init
+    git remote add origin "$url"
+    git fetch --depth=1 origin "$rev" || git fetch origin
+    git reset --hard "$rev"
     popd
   fi
   popd
