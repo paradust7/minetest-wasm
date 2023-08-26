@@ -15,11 +15,10 @@
       </select>
 
       <hr>
-      <b>Single Player:</b>
-      <button id="launch_singleplayer">Launch</button>
+      <button id="launch" style="width: 300px; height: 50px; font-size: 20pt;">Launch Minetest</button>
       <br/>
       <hr>
-      <b>Multiplayer:</b>
+      <b style="font-size: 20pt;">Run Server In Browser</b>
       <br/>
       <b>Player Name:</b>
       <input style="border: 2px solid black; width: 400px; height: 2em" type="text" id="multiplayer_username" required="" pattern="[A-Za-z0-9_-]{1,20}" maxlength="19" title="Alphanumeric, 19 characters max">
@@ -29,10 +28,11 @@
           <option value="minetest_game">minetest_game</option>
       </select>
       <br/>
-      <button id="launch_server">Launch Multiplayer Server</button>
+      <span>After launch, copy the URL and use it to open clients.</span>
       <br/>
-      <span>After launch, copy the URL and use it to open clients. If the server is closed, the game ends.
-      </span>
+      <span>Closing this page shuts down the server and ends the game.</span>
+      <br/>
+      <button id="launch_server" style="width: 300px; height: 50px; font-size: 20pt;">Launch Server</button>
 
     </div>
     <div id="join_form" class="console" style="color: white; display: none;">
@@ -97,8 +97,8 @@ max_block_generate_distance = 5
               select_proxy.appendChild(opt);
           });
 
-          const launchSinglePlayer = document.getElementById('launch_singleplayer');
-          launchSinglePlayer.addEventListener('click', () => {
+          const launch = document.getElementById('launch');
+          launch.addEventListener('click', () => {
               const proxyIndex = document.getElementById('select_proxy').value;
               const proxy = proxies[proxyIndex][0];
               wipePage();
