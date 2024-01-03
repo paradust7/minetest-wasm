@@ -4,4 +4,5 @@
 
 export INCREMENTAL=true
 ./build_minetest.sh
+./build_fsroot.sh
 ./build_www.sh
