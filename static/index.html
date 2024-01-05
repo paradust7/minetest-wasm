@@ -14,6 +14,13 @@
           <!-- filled by javascript -->
       </select>
 
+      <br/>
+
+      <b>Select language:</b>
+      <select id="select_language">
+          <!-- filled by javascript -->
+      </select>
+
       <hr>
       <button id="launch" style="width: 300px; height: 50px; font-size: 20pt;">Launch Minetest</button>
       <br/>
@@ -45,12 +52,13 @@
     </div>
     <script type="text/javascript" src="%__RELEASE_UUID__%/launcher.js"></script>
     <script type="text/javascript">
+
       // Reduce memory and network usage
-      const memorySavingConfig = `
-viewing_range = 85
-max_block_send_distance = 5
-max_block_generate_distance = 5
-`;
+      function enableMemorySaving(mtl) {
+          mtl.setConf('viewing_range', 85);
+          mtl.setConf('max_block_send_distance', 5);
+          mtl.setConf('max_block_generate_distance', 5);
+      }
 
       const launchForm = document.getElementById('launch_form');
       const joinForm = document.getElementById('join_form');
@@ -97,12 +105,22 @@ max_block_generate_distance = 5
               select_proxy.appendChild(opt);
           });
 
+          const select_language = document.getElementById('select_language');
+          SUPPORTED_LANGUAGES.forEach(entry => {
+              const opt = document.createElement('option');
+              opt.value = entry[0];
+              opt.innerText = entry[1];
+              select_language.appendChild(opt);
+          });
+          select_language.value = getDefaultLanguage();
+
           const launch = document.getElementById('launch');
           launch.addEventListener('click', () => {
               const proxyIndex = document.getElementById('select_proxy').value;
               const proxy = proxies[proxyIndex][0];
               wipePage();
               mtl.setProxy(proxy);
+              mtl.setLang(select_language.value);
               mtl.launch(args);
           });
 
@@ -134,7 +152,8 @@ max_block_generate_distance = 5
               args.go = true;
               history.pushState({}, "", `?proxy=${proxyIndex}&game=${game}&join=${clientCode}`);
               mtl.setVPN(serverCode, clientCode);
-              mtl.setMinetestConf(memorySavingConfig);
+              enableMemorySaving(mtl);
+              mtl.setLang(select_language.value);
               mtl.launch(args);
           });
 
@@ -156,7 +175,8 @@ max_block_generate_distance = 5
               args.port = 30000;
               args.go = true;
               mtl.setVPN(null, join_code);
-              mtl.setMinetestConf(memorySavingConfig);
+              enableMemorySaving(mtl);
+              mtl.setLang(select_language.value);
               mtl.launch(args);
           });
       }

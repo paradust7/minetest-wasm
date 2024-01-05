@@ -11,7 +11,8 @@ RUN \
 		cmake \
 		tclsh \
 		zip \
-		zstd
+		zstd \
+		gettext
 
 COPY . /minetest-wasm
 

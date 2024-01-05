@@ -576,7 +576,7 @@ class MinetestLauncher {
         this.proxyUrl = "wss://minetest.dustlabs.io/proxy";
         this.packsDir = DEFAULT_PACKS_DIR;
         this.packsDirIsCors = false;
-        this.minetestConf = null;
+        this.minetestConf = new Map();
 
         mtScheduler.addCondition("wasmReady", loadWasm);
         mtScheduler.addCondition("launch_called");
@@ -614,8 +614,27 @@ class MinetestLauncher {
         this.vpn = serverCode ? serverCode : clientCode;
     }
 
-    setMinetestConf(contents) {
-        this.minetestConf = contents;
+    // Set a key/value pair in minetest.conf
+    // Overrides previous values of the same key
+    setConf(key, value) {
+        key = key.toString();
+        value = value.toString();
+        this.minetestConf.set(key, value);
+    }
+
+    #renderMinetestConf() {
+        let lines = [];
+        for (const [k, v] of this.minetestConf.entries()) {
+            lines.push(`${k} = ${v}\n`);
+        }
+        return lines.join('');
+    }
+
+    setLang(lang) {
+        if (!SUPPORTED_LANGUAGES_MAP.has(lang)) {
+            alert(`Invalid code in setLang: ${lang}`);
+        }
+        this.setConf("language", lang);
     }
 
     // Returns pack status:
@@ -732,8 +751,10 @@ class MinetestLauncher {
         this.addPacks(this.args.packs);
         activateBody();
         fixGeometry();
-        if (this.minetestConf) {
-            const confBuf = stringToNewUTF8(this.minetestConf)
+        if (this.minetestConf.size > 0) {
+            const contents = this.#renderMinetestConf();
+            console.log("minetest.conf is: ", contents);
+            const confBuf = stringToNewUTF8(contents);
             emloop_set_minetest_conf(confBuf);
             _free(confBuf);
         }
@@ -754,4 +775,113 @@ class MinetestLauncher {
         }
         mtScheduler.setCondition("launch_called");
     }
+}
+
+// Pulled from builtin/mainmenu/settings/dlg_settings.lua
+const SUPPORTED_LANGUAGES = [
+	['be', "Беларуская [be]"],
+	['bg', "Български [bg]"],
+	['ca', "Català [ca]"],
+	['cs', "Česky [cs]"],
+	['cy', "Cymraeg [cy]"],
+	['da', "Dansk [da]"],
+	['de', "Deutsch [de]"],
+	['el', "Ελληνικά [el]"],
+	['en', "English [en]"],
+	['eo', "Esperanto [eo]"],
+	['es', "Español [es]"],
+	['et', "Eesti [et]"],
+	['eu', "Euskara [eu]"],
+	['fi', "Suomi [fi]"],
+	['fil', "Wikang Filipino [fil]"],
+	['fr', "Français [fr]"],
+	['gd', "Gàidhlig [gd]"],
+	['gl', "Galego [gl]"],
+	['hu', "Magyar [hu]"],
+	['id', "Bahasa Indonesia [id]"],
+	['it', "Italiano [it]"],
+	['ja', "日本語 [ja]"],
+	['jbo', "Lojban [jbo]"],
+	['kk', "Қазақша [kk]"],
+	['ko', "한국어 [ko]"],
+	['ky', "Kırgızca / Кыргызча [ky]"],
+	['lt', "Lietuvių [lt]"],
+	['lv', "Latviešu [lv]"],
+	['mn', "Монгол [mn]"],
+	['mr', "मराठी [mr]"],
+	['ms', "Bahasa Melayu [ms]"],
+	['nb', "Norsk Bokmål [nb]"],
+	['nl', "Nederlands [nl]"],
+	['nn', "Norsk Nynorsk [nn]"],
+	['oc', "Occitan [oc]"],
+	['pl', "Polski [pl]"],
+	['pt', "Português [pt]"],
+	['pt_BR', "Português do Brasil [pt_BR]"],
+	['ro', "Română [ro]"],
+	['ru', "Русский [ru]"],
+	['sk', "Slovenčina [sk]"],
+	['sl', "Slovenščina [sl]"],
+	['sr_Cyrl', "Српски [sr_Cyrl]"],
+	['sr_Latn', "Srpski (Latinica) [sr_Latn]"],
+	['sv', "Svenska [sv]"],
+	['sw', "Kiswahili [sw]"],
+	['tr', "Türkçe [tr]"],
+	['tt', "Tatarça [tt]"],
+	['uk', "Українська [uk]"],
+	['vi', "Tiếng Việt [vi]"],
+	['zh_CN', "中文 (简体) [zh_CN]"],
+	['zh_TW', "正體中文 (繁體) [zh_TW]"],
+];
+
+const SUPPORTED_LANGUAGES_MAP = new Map(SUPPORTED_LANGUAGES);
+
+function getDefaultLanguage() {
+    const fuzzy = [];
+
+    const url_params = new URLSearchParams(window.location.search);
+    if (url_params.has("lang")) {
+        const lang = url_params.get("lang");
+        if (SUPPORTED_LANGUAGES_MAP.has(lang)) {
+            return lang;
+        }
+        alert(`Invalid lang parameter: ${lang}`);
+        return 'en';
+    }
+
+    for (let candidate of navigator.languages) {
+        candidate = candidate.replaceAll('-', '_');
+
+        if (SUPPORTED_LANGUAGES_MAP.has(candidate)) {
+            return candidate;
+        }
+
+        // Try stripping off the country code
+        const parts = candidate.split('_');
+        if (parts.length > 2) {
+            const rcandidate = parts.slice(0, 2).join('_');
+            if (SUPPORTED_LANGUAGES_MAP.has(rcandidate)) {
+                return rcandidate;
+            }
+        }
+
+        // Try just matching the language code
+        if (parts.length > 1) {
+            if (SUPPORTED_LANGUAGES_MAP.has(parts[0])) {
+                return parts[0];
+            }
+        }
+
+        // Try fuzzy match (ignore country code of both)
+        for (let entry of SUPPORTED_LANGUAGES) {
+            if (entry[0].split('_')[0] == parts[0]) {
+                fuzzy.push(entry[0]);
+            }
+        }
+    }
+
+    if (fuzzy.length > 0) {
+        return fuzzy[0];
+    }
+
+    return 'en';
 }
