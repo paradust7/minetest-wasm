@@ -762,6 +762,9 @@ class MinetestLauncher {
         // Setup emsocket
         // TODO: emsocket should export the helpers for this
         emsocket_init();
+        if (!args.proxy) {
+            this.setProxy(`wss://${args.address}:${args.port}`);
+        }
         const proxyBuf = stringToNewUTF8(this.proxyUrl);
         emsocket_set_proxy(proxyBuf);
         _free(proxyBuf);
