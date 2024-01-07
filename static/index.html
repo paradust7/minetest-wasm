@@ -240,8 +240,12 @@
       };
       mtl.onready = () => {
           tcon_print("", "READY!");
-          enableLaunchForm();
-      };
+          if (args.go) {
+              mtl.launch(args);
+          } else {
+              enableLaunchForm();
+          }
+          };
       mtl.onerror = (err) => {
           tcon_print("", "**************** FATAL ERROR ******************");
           tcon_print("", err);
