@@ -762,8 +762,11 @@ class MinetestLauncher {
         // Setup emsocket
         // TODO: emsocket should export the helpers for this
         emsocket_init();
-        if (!args.proxy) {
-            this.setProxy(`wss://${args.address}:${args.port}`);
+        if (args.no_proxy) {
+	    if (!args.address) {
+                [args.address, args.port] = location.host.split(":");
+            }
+            this.setProxy(`wss://${args.address}` + (args.port ? ":" + args.port : ":30000") );
         }
         const proxyBuf = stringToNewUTF8(this.proxyUrl);
         emsocket_set_proxy(proxyBuf);
