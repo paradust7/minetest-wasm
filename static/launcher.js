@@ -341,20 +341,8 @@ var Module = {
 
 Module['printErr'] = Module['print'];
 
-// This is injected into workers so that out/err are sent to the main thread.
-// This probably should be the default behavior, but doesn't seem to be for WasmFS.
-const workerInject = `
-  Module['print'] = (text) => {
-    postMessage({cmd: 'callHandler', handler: 'print', args: [text], threadId: Module['_pthread_self']()});
-  };
-  Module['printErr'] = (text) => {
-    postMessage({cmd: 'callHandler', handler: 'printErr', args: [text], threadId: Module['_pthread_self']()});
-  };
-  importScripts('minetest.js');
-`;
-Module['mainScriptUrlOrBlob'] = new Blob([workerInject], { type: "text/javascript" });
-
-
+// Custom worker script to direct stdout/stderr to the main thread.
+Module['mainScriptUrlOrBlob'] = RELEASE_DIR + '/worker.js';
 
 Module['onFullScreen'] = () => { fixGeometry(); };
 window.onerror = function(event) {

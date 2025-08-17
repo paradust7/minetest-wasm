@@ -1,0 +1,13 @@
+--- emsdk-orig/upstream/emscripten/system/lib/wasmfs/syscalls.cpp	2025-08-01 07:41:57.000000000 -0700
++++ emsdk/upstream/emscripten/system/lib/wasmfs/syscalls.cpp	2025-08-15 16:33:54.362786310 -0700
+@@ -576,7 +576,9 @@
+   mode_t mode = 0;
+   va_list v1;
+   va_start(v1, flags);
+-  mode = va_arg(v1, int);
++  if (flags & O_CREAT) {
++    mode = va_arg(v1, int);
++  }
+   va_end(v1);
+ 
+   return doOpen(path::parseParent((char*)path, dirfd), flags, mode);

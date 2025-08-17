@@ -1,8 +1,7 @@
-Binary files emsdk-orig/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/libwasmfs-mt.a and emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/libwasmfs-mt.a differ
 diff -urN emsdk-orig/upstream/emscripten/system/lib/wasmfs/wasmfs.cpp emsdk/upstream/emscripten/system/lib/wasmfs/wasmfs.cpp
---- emsdk-orig/upstream/emscripten/system/lib/wasmfs/wasmfs.cpp	2022-07-29 17:22:28.000000000 +0000
-+++ emsdk/upstream/emscripten/system/lib/wasmfs/wasmfs.cpp	2022-08-06 02:07:24.098196400 +0000
-@@ -141,7 +141,7 @@
+--- emsdk-orig/upstream/emscripten/system/lib/wasmfs/wasmfs.cpp	2025-08-01 07:41:57.000000000 -0700
++++ emsdk/upstream/emscripten/system/lib/wasmfs/wasmfs.cpp	2025-08-14 04:45:14.725458035 -0700
+@@ -174,7 +174,7 @@
      }
  
      auto inserted =

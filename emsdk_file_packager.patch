@@ -1,6 +1,7 @@
---- emsdk1/upstream/emscripten/tools/file_packager.py	2022-03-24 19:45:39.000000000 +0000
-+++ emsdk2/upstream/emscripten/tools/file_packager.py	2022-03-22 10:13:11.332849695 +0000
-@@ -686,8 +686,12 @@
+diff -urN emsdk-orig/upstream/emscripten/tools/file_packager.py emsdk/upstream/emscripten/tools/file_packager.py
+--- emsdk-orig/upstream/emscripten/tools/file_packager.py	2025-08-01 07:42:33.000000000 -0700
++++ emsdk/upstream/emscripten/tools/file_packager.py	2025-08-14 04:45:14.723457995 -0700
+@@ -754,8 +754,12 @@
        use_data = '''// Reuse the bytearray from the XHR as the source for file reads.
            DataRequest.prototype.byteArray = byteArray;
            var files = metadata['files'];
