@@ -30,8 +30,8 @@ getrepo zstd "https://github.com/facebook/zstd.git" e47e674cd09583ff0503f0f6defd
 getrepo minetest_game "https://github.com/minetest/minetest_game.git" a3b171e317ec63428975915b821eb438c313adef
 
 # These repos are part of the fork
-getrepo webshims "https://github.com/paradust7/webshims.git" 91c3fe85d2cb7f85cc8e19d3f53dc8f252a69ff7
-getrepo minetest "https://github.com/paradust7/minetest.git" b3543e3af0c7a87012849bf824d9be2792ed2956
+getrepo webshims "https://github.com/paradust7/webshims.git" 0767fdedd87f61a28a34f6444b669caf563a9fd5
+getrepo minetest "https://github.com/paradust7/minetest.git" 34aa17a75d08c686b00b747ed543a8aa0a8ac049
 getrepo irrlichtmt "https://github.com/paradust7/irrlicht.git" b810648de489cf7f83d73635b7c6b83b94950a2e
 
 # Make irrlichtmt symlink

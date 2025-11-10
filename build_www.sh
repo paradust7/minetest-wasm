@@ -22,8 +22,8 @@ mkdir "$RELEASE_DIR"
 mkdir "$PACKS_DIR"
 
 # Copy emscripten generated files
-pushd "$BUILD_DIR/minetest/src"
-EMSCRIPTEN_FILES="minetest.js minetest.wasm"
+pushd "$BUILD_DIR/minetest/bin"
+EMSCRIPTEN_FILES="luanti.js luanti.wasm"
 for I in $EMSCRIPTEN_FILES; do
   cp "$I" "$RELEASE_DIR"
 done
@@ -31,8 +31,8 @@ done
 # Ideally this would be in RELEASE_DIR, but the way this file
 # is located (see emcc --source-map-base) apparently cannot be
 # relative to the .wasm file.
-if [ -f minetest.wasm.map ]; then
-  cp minetest.wasm.map "$WWW_DIR"
+if [ -f luanti.wasm.map ]; then
+  cp luanti.wasm.map "$WWW_DIR"
 fi
 
 popd

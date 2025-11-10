@@ -219,7 +219,7 @@ function loadWasm() {
     // and waiting for main() arguments.
     const mtModuleScript = document.createElement("script");
     mtModuleScript.type = "text/javascript";
-    mtModuleScript.src = RELEASE_DIR + "/minetest.js";
+    mtModuleScript.src = RELEASE_DIR + "/luanti.js";
     mtModuleScript.async = true;
     document.head.appendChild(mtModuleScript);
 }

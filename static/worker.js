@@ -8,4 +8,4 @@ Module['printErr'] = (text) => {
   postMessage({cmd: 'callHandler', handler: 'printErr', args: [text]});
 };
 
-importScripts('minetest.js');
+importScripts('luanti.js');
