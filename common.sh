@@ -67,7 +67,6 @@ export EMSDK_SYSLIB="${EMSDK_ROOT}/upstream/emscripten/cache/sysroot/lib/wasm32-
 export EMSDK_SYSINCLUDE="${EMSDK_ROOT}/upstream/emscripten/cache/sysroot/include"
 
 export MINETEST_REPO="$SOURCES_DIR/minetest"
-export IRRLICHT_REPO="$SOURCES_DIR/minetest/lib/irrlichtmt"
 
 function getsource() {
   local url="$1"

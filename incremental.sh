@@ -1,6 +1,6 @@
 #!/bin/bash -eux
 
-# Incremental build for making changes to only minetest / irrlicht
+# Incremental build for making changes to only luanti
 
 export INCREMENTAL=true
 ./build_minetest.sh

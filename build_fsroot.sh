@@ -24,9 +24,6 @@ rm -rf bin unix
 mkdir bin
 echo "This is here to ensure bin exists" > bin/readme.txt
 
-# Copy the irrlicht shaders
-cp -r "$IRRLICHT_REPO/media/Shaders" client/shaders/Irrlicht
-
 rm -rf games/minetest_game
 mkdir -p games
 cp -a "$SOURCES_DIR"/minetest_game games
