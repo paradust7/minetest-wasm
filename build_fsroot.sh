@@ -24,6 +24,13 @@ rm -rf bin unix
 mkdir bin
 echo "This is here to ensure bin exists" > bin/readme.txt
 
+mkdir -p cache
+cat > cache/common.conf << EOF
+update_last_checked = disabled
+no_mtg_notification = true
+no_keycode_migration_warning = true
+EOF
+
 rm -rf games/minetest_game
 mkdir -p games
 cp -a "$SOURCES_DIR"/minetest_game games
