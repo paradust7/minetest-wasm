@@ -31,4 +31,4 @@ getrepo minetest_game "https://github.com/minetest/minetest_game.git" 052ccb0928
 
 # These repos are part of the fork
 getrepo webshims "https://github.com/paradust7/webshims.git" 0767fdedd87f61a28a34f6444b669caf563a9fd5
-getrepo minetest "https://github.com/paradust7/minetest.git" 34aa17a75d08c686b00b747ed543a8aa0a8ac049
+getrepo minetest "https://github.com/paradust7/minetest.git" 3ed806c827b2a90c3a8b10f9487a464377399710
