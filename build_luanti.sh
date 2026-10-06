@@ -51,6 +51,8 @@ if ! $INCREMENTAL; then
       -DCURL_LIBRARY="$INSTALL_DIR/lib/libcurl.a" \
       -DCURL_INCLUDE_DIR="$INSTALL_DIR/include" \
       -DCMAKE_INSTALL_PREFIX="$BUILD_DIR/luanti-install" \
+      -DLIBZIP_LIBRARY="$INSTALL_DIR/lib/libzip.a" \
+      -DLIBZIP_INCLUDE_DIR="$INSTALL_DIR/include" \
       -G "Unix Makefiles" \
       "$SOURCES_DIR/luanti"
 fi

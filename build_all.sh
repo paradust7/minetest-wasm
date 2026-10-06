@@ -17,6 +17,7 @@ emcc --clear-cache --clear-ports
 ./build_webshims.sh
 ./build_openssl.sh
 ./build_curl.sh      # uses webshims, openssl, zlib
+./build_libzip.sh
 
 # Luanti
 ./build_luanti.sh

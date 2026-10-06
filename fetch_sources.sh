@@ -14,6 +14,7 @@ source common.sh
 getsource "https://www.openssl.org/source/openssl-1.1.1n.tar.gz" 40dceb51a4f6a5275bde0e6bf20ef4b91bfc32ed57c0552e2e8e15463372b17a
 getsource "https://curl.se/download/curl-7.82.0.tar.bz2" 46d9a0400a33408fd992770b04a44a7434b3036f2e8089ac28b57573d59d371f
 getsource "https://www.libarchive.org/downloads/libarchive-3.6.1.tar.xz" 5a411aceb978f43e626f0c2d1812ddd8807b645ed892453acabd532376c148e6
+getsource "https://github.com/nih-at/libzip/releases/download/v1.11.4/libzip-1.11.4.tar.xz" 8a247f57d1e3e6f6d11413b12a6f28a9d388de110adc0ec608d893180ed7097b
 
 # These are never checked into the repo, since they are separate git repos.
 # Be sure to add new entries here to .gitignore
@@ -21,4 +22,4 @@ getrepo zstd "https://github.com/facebook/zstd.git" f8745da6ff1ad1e7bab384bd1f9d
 
 # These repos are part of the fork
 getrepo webshims "https://github.com/paradust7/webshims.git" 70653a91c974aa2b20df09a39f858d92e663c1a7
-getrepo luanti "https://github.com/paradust7/luanti.git" 038b341fe861370433aea8eb6317f0bbd87303ba
+getrepo luanti "https://github.com/paradust7/luanti.git" 81aacca2dcf12e622a49146844edf4510f389c35
